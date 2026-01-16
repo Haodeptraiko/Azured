@@ -1,76 +1,38 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/zxciaz/VenyxUI/main/Reallibrary.lua"))()
+local Venyx = Library.new("Azure | Beta", 5013109572)
 
-local Window = Rayfield:CreateWindow({
-   Name = "Azure | Beta",
-   LoadingTitle = "Azure Hub Loading...",
-   LoadingSubtitle = "by Haodeptraiko",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "AzureConfig",
-      FileName = "MainGui"
-   }
-})
+-- Mau sac giong trong anh
+local Themes = {
+    Background = Color3.fromRGB(24, 24, 24),
+    Glow = Color3.fromRGB(255, 105, 180),
+    Accent = Color3.fromRGB(30, 30, 30),
+    LightContrast = Color3.fromRGB(20, 20, 20),
+    DarkContrast = Color3.fromRGB(14, 14, 14),
+    TextColor = Color3.fromRGB(255, 255, 255)
+}
 
--- Tab Aiming (Aimbot)
-local AimTab = Window:CreateTab("Aiming", 4483362458) -- Icon ID
-local AimSection = AimTab:CreateSection("Aimbot Settings")
+-- Tao cac Tab giong anh
+local AimingPage = Venyx:addPage("Aiming", 5012544693)
+local BlatantPage = Venyx:addPage("Blatant", 5012544693)
+local VisualsPage = Venyx:addPage("Visuals", 5012544693)
+local MiscPage = Venyx:addPage("Misc", 5012544693)
+local SettingsPage = Venyx:addPage("Settings", 5012544693)
 
-local AimbotEnabled = false
-AimTab:CreateToggle({
-   Name = "Enable Aimbot",
-   CurrentValue = false,
-   Flag = "AimbotToggle",
-   Callback = function(Value)
-      AimbotEnabled = Value
-   end,
-})
+-- Tab Aiming
+local AimSection = AimingPage:addSection("Aimbot")
+AimSection:addToggle("Enable", false, function(value) print("Aimbot: ", value) end)
+AimSection:addTextbox("Prediction", "0.165", function(value, focusLost) end)
+AimSection:addToggle("Draw FOV", false, function(value) end)
 
-AimTab:CreateSlider({
-   Name = "Aimbot FOV",
-   Range = {0, 500},
-   Increment = 10,
-   Suffix = "Radius",
-   CurrentValue = 150,
-   Flag = "FOVSlider",
-   Callback = function(Value)
-      -- FOVCircle.Radius = Value (Ket noi voi code FOV cua ban)
-   end,
-})
+-- Tab Blatant
+local MovementSection = BlatantPage:addSection("Movement")
+MovementSection:addToggle("Speed", false, function(value) _G.Speed = value end)
+MovementSection:addToggle("Fly", false, function(value) _G.Fly = value end)
 
--- Tab Blatant (Speed, Fly)
-local BlatantTab = Window:CreateTab("Blatant", 4483362458)
-local MovementSection = BlatantTab:CreateSection("Movement")
+-- Tab Visuals
+local VisualSection = VisualsPage:addSection("Visuals")
+VisualSection:addToggle("ESP Name", false, function(value) end)
+VisualSection:addToggle("Tracers", false, function(value) end)
 
-BlatantTab:CreateToggle({
-   Name = "Fly Mode",
-   CurrentValue = false,
-   Flag = "FlyToggle",
-   Callback = function(Value)
-      -- FlyOn = Value (Ket noi voi logic Fly)
-   end,
-})
-
-BlatantTab:CreateSlider({
-   Name = "Speed Multiplier",
-   Range = {1, 10},
-   Increment = 0.5,
-   Suffix = "x",
-   CurrentValue = 1.5,
-   Flag = "SpeedSlider",
-   Callback = function(Value)
-      -- SpeedMultiplier = Value
-   end,
-})
-
--- Tab Visuals (ESP)
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-VisualsTab:CreateToggle({
-   Name = "ESP Name",
-   CurrentValue = false,
-   Flag = "EspToggle",
-   Callback = function(Value)
-      -- EspOn = Value
-   end,
-})
-
-Rayfield:LoadConfiguration()
+-- Keybind de an/hien menu (Mac dinh la nut Phai Chuot hoac phim bam tu chon)
+Venyx:SelectPage(Venyx.pages[1], true)
