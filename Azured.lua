@@ -9,6 +9,41 @@ ScreenGui.Name = "Mobile_Optimized_Script"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
+local IntroLabel = Instance.new("TextLabel")
+IntroLabel.Parent = ScreenGui
+IntroLabel.Size = UDim2.new(1, 0, 0, 50)
+IntroLabel.Position = UDim2.new(0, 0, 0.2, 0) -- Hien o phia tren man hinh
+IntroLabel.BackgroundTransparency = 1
+IntroLabel.Text = "Azured" -- Ban co the doi ten script o day
+IntroLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntroLabel.Font = Enum.Font.GothamBold
+IntroLabel.TextSize = 25
+IntroLabel.TextTransparency = 1
+
+local IntroStroke = Instance.new("UIStroke", IntroLabel)
+IntroStroke.Thickness = 2
+IntroStroke.Color = Color3.fromRGB(0, 255, 0) -- Vien mau xanh la
+IntroStroke.Transparency = 1
+
+-- Hieu ung hien thi (Tween)
+task.spawn(function()
+    local TweenService = game:GetService("TweenService")
+    local Info = TweenInfo.new(1, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    
+    -- Hien len
+    TweenService:Create(IntroLabel, Info, {TextTransparency = 0, Position = UDim2.new(0, 0, 0.25, 0)}):Play()
+    TweenService:Create(IntroStroke, Info, {Transparency = 0}):Play()
+    
+    task.wait(3) -- Cho 3 giay
+    
+    -- Mo di va bien mat
+    TweenService:Create(IntroLabel, Info, {TextTransparency = 1, Position = UDim2.new(0, 0, 0.2, 0)}):Play()
+    TweenService:Create(IntroStroke, Info, {Transparency = 1}):Play()
+    
+    task.wait(1)
+    IntroLabel:Destroy()
+end)
+
 local function MakeDraggable(obj)
     local Dragging, DragInput, DragStart, StartPos
     obj.InputBegan:Connect(function(input)
