@@ -192,8 +192,33 @@ local function NewSlider(parent, text, min, max, callback)
     Sbg.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then Update(i) end end)
 end
 
--- Setup Page Content
-NewToggle(AimPage, "Enable Hitbox", function(v) _G.HitEnabled = v end)
-NewSlider(AimPage, "Hitbox Size", 2, 50, function(v) _G.HitSize = v end)
+-- Khoi tao Tab (Dam bao ten bien la AimgPage de khong bi loi)
+local AimgPage = NewTab("Aimg")
+
+-- Bat tat Hitbox (Dung bien AimgPage o day)
+AddToggle(AimgPage, "Enable Hitbox", function(v) 
+    _G.HitboxEnabled = v 
+end)
+
+-- Chinh kich thuoc Hitbox
+AddSlider(AimgPage, "Hitbox Size", 2, 50, 2, function(v) 
+    _G.HitboxSize = v 
+end)
+
 
 Pages["Aiming"].Visible = true
+
+local RunService = game:GetService("RunService")
+RunService.RenderStepped:Connect(function()
+    if _G.HitboxEnabled then
+        for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+            if p ~= game:GetService("Players").LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = p.Character.HumanoidRootPart
+                hrp.Size = Vector3.new(_G.HitboxSize, _G.HitboxSize, _G.HitboxSize)
+                hrp.Transparency = 0.7
+                hrp.BrickColor = BrickColor.new("Bright violet")
+                hrp.CanCollide = false
+            end
+        end
+    end
+end)
