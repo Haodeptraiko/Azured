@@ -1,133 +1,144 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
-local AzureGui = Instance.new("ScreenGui")
-AzureGui.Name = "AzureBetaFixed"
-AzureGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-AzureGui.ResetOnSpawn = false
+-- Xoa menu cu neu co
+if LocalPlayer.PlayerGui:FindFirstChild("AzureUI_Pure") then
+    LocalPlayer.PlayerGui.AzureUI_Pure:Destroy()
+end
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Parent = AzureGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
-MainFrame.Size = UDim2.new(0, 400, 0, 250)
-Instance.new("UICorner", MainFrame)
+local Azure = Instance.new("ScreenGui")
+Azure.Name = "AzureUI_Pure"
+Azure.Parent = LocalPlayer:WaitForChild("PlayerGui")
+Azure.ResetOnSpawn = false
 
-local SideBar = Instance.new("Frame")
-SideBar.Parent = MainFrame
-SideBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-SideBar.Size = UDim2.new(0, 100, 1, 0)
-Instance.new("UICorner", SideBar)
+-- Khung Main giong anh
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Parent = Azure
+Main.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+Main.BorderSizePixel = 0
+Main.Position = UDim2.new(0.5, -230, 0.5, -160)
+Main.Size = UDim2.new(0, 460, 0, 320)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 45)
 
+-- Title Bar
 local Title = Instance.new("TextLabel")
-Title.Parent = SideBar
-Title.Text = "Azure | Beta"
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 105, 180)
+Title.Parent = Main
+Title.Text = "  Azure | Beta"
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Title.TextColor3 = Color3.fromRGB(220, 220, 220)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 12
+Title.TextSize = 13
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
-local TabContainer = Instance.new("Frame")
-TabContainer.Parent = SideBar
-TabContainer.Position = UDim2.new(0, 0, 0, 40)
-TabContainer.Size = UDim2.new(1, 0, 1, -40)
-TabContainer.BackgroundTransparency = 1
-local TabList = Instance.new("UIListLayout", TabContainer)
-TabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-TabList.Padding = UDim.new(0, 5)
+-- Tab Bar (Top)
+local TabBar = Instance.new("Frame")
+TabBar.Parent = Main
+TabBar.Position = UDim2.new(0, 0, 0, 25)
+TabBar.Size = UDim2.new(1, 0, 0, 25)
+TabBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 
-local PageContainer = Instance.new("Frame")
-PageContainer.Parent = MainFrame
-PageContainer.Position = UDim2.new(0, 110, 0, 10)
-PageContainer.Size = UDim2.new(1, -120, 1, -20)
-PageContainer.BackgroundTransparency = 1
+local TabList = Instance.new("UIListLayout", TabBar)
+TabList.FillDirection = Enum.FillDirection.Horizontal
+TabList.Padding = UDim.new(0, 10)
 
-local Pages = {}
-local _G = {Speed = false, Fly = false, SpeedValue = 1.5}
-
-local function CreatePage(name)
-    local Page = Instance.new("ScrollingFrame")
-    Page.Parent = PageContainer
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.ScrollBarTransparency = 1
-    local PageList = Instance.new("UIListLayout", Page)
-    PageList.Padding = UDim.new(0, 5)
-    
-    local TabBtn = Instance.new("TextButton")
-    TabBtn.Parent = TabContainer
-    TabBtn.Size = UDim2.new(0, 80, 0, 25)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    TabBtn.Text = name
-    TabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    TabBtn.Font = Enum.Font.Gotham
-    TabBtn.TextSize = 10
-    Instance.new("UICorner", TabBtn)
-    
-    TabBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs(Pages) do p.Visible = false end
-        Page.Visible = true
-    end)
-    
-    Pages[name] = Page
-    return Page
+local function AddTab(name)
+    local T = Instance.new("TextButton")
+    T.Parent = TabBar
+    T.Size = UDim2.new(0, 60, 1, 0)
+    T.BackgroundTransparency = 1
+    T.Text = name
+    T.TextColor3 = Color3.fromRGB(150, 150, 150)
+    T.Font = Enum.Font.Gotham
+    T.TextSize = 11
 end
 
-local function CreateToggle(name, parent, callback)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = parent
-    Btn.Size = UDim2.new(1, 0, 0, 30)
-    Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Btn.Text = "  " .. name
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.TextXAlignment = Enum.TextXAlignment.Left
-    Btn.Font = Enum.Font.Gotham
-    Btn.TextSize = 11
-    Instance.new("UICorner", Btn)
+AddTab("  Aiming")
+AddTab("Blatant")
+AddTab("Visuals")
+AddTab("Misc")
+AddTab("Settings")
+
+-- Keybinds Menu (Cái bảng nhỏ bên trái trong ảnh)
+local Keybinds = Instance.new("Frame")
+Keybinds.Parent = Azure
+Keybinds.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Keybinds.Position = UDim2.new(0, 50, 0.5, -50)
+Keybinds.Size = UDim2.new(0, 150, 0, 140)
+Instance.new("UIStroke", Keybinds).Color = Color3.fromRGB(255, 105, 180)
+
+local KTitle = Instance.new("TextLabel", Keybinds)
+KTitle.Text = "Keybinds"
+KTitle.Size = UDim2.new(1, 0, 0, 20)
+KTitle.TextColor3 = Color3.fromRGB(255, 105, 180)
+KTitle.BackgroundTransparency = 1
+KTitle.Font = Enum.Font.GothamBold
+
+local KList = Instance.new("TextLabel", Keybinds)
+KList.Text = "[None] Aimbot\n[Q] Target Aim\n[None] Speed\n[None] Fly"
+KList.Position = UDim2.new(0, 5, 0, 25)
+KList.Size = UDim2.new(1, -10, 1, -30)
+KList.TextColor3 = Color3.fromRGB(180, 180, 180)
+KList.Font = Enum.Font.Gotham
+KList.TextSize = 10
+KList.TextYAlignment = Enum.TextYAlignment.Top
+KList.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Noi dung chinh (2 cot)
+local Container = Instance.new("Frame", Main)
+Container.Position = UDim2.new(0, 10, 0, 60)
+Container.Size = UDim2.new(1, -20, 1, -70)
+Container.BackgroundTransparency = 1
+
+local function CreateSection(name, pos)
+    local S = Instance.new("Frame", Container)
+    S.Position = pos
+    S.Size = UDim2.new(0.48, 0, 1, 0)
+    S.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Instance.new("UIStroke", S).Color = Color3.fromRGB(40, 40, 40)
     
-    local Status = Instance.new("Frame")
-    Status.Parent = Btn
-    Status.Position = UDim2.new(1, -25, 0.5, -7)
-    Status.Size = UDim2.new(0, 15, 0, 15)
-    Status.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Instance.new("UICorner", Status)
-    
-    local toggled = false
-    Btn.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        Status.BackgroundColor3 = toggled and Color3.fromRGB(255, 105, 180) or Color3.fromRGB(50, 50, 50)
-        callback(toggled)
-    end)
+    local L = Instance.new("TextLabel", S)
+    L.Text = "  " .. name
+    L.Size = UDim2.new(1, 0, 0, 20)
+    L.TextColor3 = Color3.fromRGB(255, 105, 180)
+    L.BackgroundTransparency = 1
+    L.Font = Enum.Font.GothamBold
+    L.TextSize = 10
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    return S
 end
 
--- Tao trang va nut
-local AimPage = CreatePage("Aiming")
-local BlatantPage = CreatePage("Blatant")
-local VisualsPage = CreatePage("Visuals")
+local Left = CreateSection("Aimbot", UDim2.new(0, 0, 0, 0))
+local Right = CreateSection("Target Aim", UDim2.new(0.52, 0, 0, 0))
 
-CreateToggle("Aimbot Enable", AimPage, function(v) end)
-CreateToggle("Speed Hack", BlatantPage, function(v) _G.Speed = v end)
-CreateToggle("Fly Mode", BlatantPage, function(v) _G.Fly = v end)
-CreateToggle("ESP Name", VisualsPage, function(v) end)
+-- Pink Slider (Thanh truot mau hong y chan anh)
+local function AddPinkSlider(parent, name, y)
+    local Label = Instance.new("TextLabel", parent)
+    Label.Text = "  " .. name
+    Label.Position = UDim2.new(0, 0, 0, y)
+    Label.Size = UDim2.new(1, 0, 0, 15)
+    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Label.BackgroundTransparency = 1
+    Label.Font = Enum.Font.Gotham
+    Label.TextSize = 9
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local Bg = Instance.new("Frame", parent)
+    Bg.Position = UDim2.new(0.05, 0, 0, y + 15)
+    Bg.Size = UDim2.new(0.9, 0, 0, 10)
+    Bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    
+    local Fill = Instance.new("Frame", Bg)
+    Fill.Size = UDim2.new(0.7, 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(255, 105, 180) -- Pink
+end
 
-Pages["Aiming"].Visible = true
+AddPinkSlider(Left, "Aimbot FOV", 30)
+AddPinkSlider(Right, "Target FOV", 30)
 
--- Logic di chuyen
-RunService.RenderStepped:Connect(function()
-    local Char = LocalPlayer.Character
-    if Char and Char:FindFirstChild("HumanoidRootPart") then
-        local Root = Char.HumanoidRootPart
-        if _G.Speed and Char.Humanoid.MoveDirection.Magnitude > 0 then
-            Root.CFrame = Root.CFrame + (Char.Humanoid.MoveDirection * _G.SpeedValue)
-        end
-        if _G.Fly then
-            Root.Velocity = Vector3.zero
-            Root.CFrame = Root.CFrame + (workspace.CurrentCamera.CFrame.LookVector * 2.5)
-        end
-    end
-end)
+-- Dragging (Keo tha menu)
+local dStart, sPos
+Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dStart = i.Position sPos = Main.Position end end)
+UserInputService.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement and dStart then local delta = i.Position - dStart Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y) end end)
