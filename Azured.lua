@@ -122,6 +122,7 @@ local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 0))
 local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 35))
 local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 70))
 local EspBtn = CreateMenuBtn("ESP NAME", UDim2.new(0, 5, 0, 105))
+local HopBtn = CreateMenuBtn("SERVER HOP", UDim2.new(0, 5, 0, 140))
 
 local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn = nil, false, false, false, false, false
 local Degree = 0
@@ -203,7 +204,7 @@ RunService.RenderStepped:Connect(function()
                 pRoot.Size = Vector3.new(2, 2, 1)
                 pRoot.Transparency = 1
             end
-            
+        
             local Tag = pRoot:FindFirstChild("EspTag")
             if EspOn then
                 if not Tag then
@@ -226,3 +227,33 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+HopBtn.MouseButton1Click:Connect(function()
+    HopBtn.Text = "SEARCHING..."
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local PlaceId = game.PlaceId
+    local JobId = game.JobId
+
+    local function GetServers()
+        local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+        local success, result = pcall(function() return game:HttpGet(url) end)
+        if success then return HttpService:JSONDecode(result) end
+        return nil
+    end
+
+    local servers = GetServers()
+    if servers and servers.data then
+        for _, server in pairs(servers.data) do
+            if server.id ~= JobId and server.playing < server.maxPlayers then
+                HopBtn.Text = "TELEPORTING..."
+                TeleportService:TeleportToPlaceInstance(PlaceId, server.id, LocalPlayer)
+                return
+            end
+        end
+    end
+    HopBtn.Text = "FAILED"
+    task.wait(2)
+    HopBtn.Text = "SERVER HOP"
+end)
+
