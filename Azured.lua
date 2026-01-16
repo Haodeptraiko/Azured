@@ -4,8 +4,6 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Prediction = 0.16599
-local TargetPart = "HumanoidRootPart"
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = HttpService:GenerateGUID(false)
@@ -176,28 +174,13 @@ RunService.RenderStepped:Connect(function()
             LockedPlayer = nil
             LockStroke.Color = Color3.fromRGB(0, 255, 0)
             Camera.CameraType = Enum.CameraType.Custom
-            Line.Visible = false
         else
             local TRoot = LockedPlayer.Character.HumanoidRootPart
             Degree = Degree + 1.5
             local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
             Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
             Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 10, 20), TRoot.Position)
-
-            local Pos, OnScreen = Camera:WorldToViewportPoint(TRoot.Position + (TRoot.Velocity * Prediction))
-            if OnScreen then
-                Line.Visible = true
-                Line.Color = Color3.fromRGB(255, 255, 255)
-                Line.Thickness = 1
-                Line.Transparency = 1
-                Line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-                Line.To = Vector2.new(Pos.X, Pos.Y)
-            else
-                Line.Visible = false
-            end
         end
-    else
-        Line.Visible = false
     end
 
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then
@@ -243,22 +226,3 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-
-local mt = getrawmetatable(game)
-local old = mt.__namecall
-setreadonly(mt, false)
-
-mt.__namecall = newcclosure(function(self, ...)
-    local args = {...}
-    local method = getnamecallmethod()
-    
-    if StrafeOn and LockedPlayer and method == "FireServer" and args[1] == "UpdateMousePos" then
-        args[2] = LockedPlayer.Character[TargetPart].Position + (LockedPlayer.Character[TargetPart].Velocity * Prediction)
-        return old(self, unpack(args))
-    end
-    
-    return old(self, ...)
-end)
-
-setreadonly(mt, true)
-
