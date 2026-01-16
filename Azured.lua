@@ -1,12 +1,11 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = HttpService:GenerateGUID(false)
+ScreenGui.Name = "Mobile_Optimized_Script"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -129,11 +128,14 @@ local Degree = 0
 local function GetClosestPlayer()
     local Target, MinDist = nil, math.huge
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
-            local Dist = (v.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Magnitude
-            if Dist < MinDist then
-                MinDist = Dist
-                Target = v
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local Hum = v.Character:FindFirstChild("Humanoid")
+            if Hum and Hum.Health > 0 then
+                local Dist = (v.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Magnitude
+                if Dist < MinDist then
+                    MinDist = Dist
+                    Target = v
+                end
             end
         end
     end
@@ -179,7 +181,9 @@ RunService.RenderStepped:Connect(function()
             Degree = Degree + 1.5
             local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
             Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
-            Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 10, 20), TRoot.Position)
+            
+            local CamOffset = Vector3.new(0, 5, 12)
+            Camera.CFrame = CFrame.new(TRoot.Position + CamOffset, TRoot.Position)
         end
     end
 
@@ -191,37 +195,41 @@ RunService.RenderStepped:Connect(function()
         Root.Velocity = Vector3.new(0, 0, 0)
         Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8)
     end
+end)
 
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local pRoot = v.Character.HumanoidRootPart
-            if HitOn then
-                pRoot.Size = Vector3.new(30, 30, 30)
-                pRoot.Transparency = 0.7
-                pRoot.CanCollide = false
-            else
-                pRoot.Size = Vector3.new(2, 2, 1)
-                pRoot.Transparency = 1
-            end
-            
-            local Tag = pRoot:FindFirstChild("EspTag")
-            if EspOn then
-                if not Tag then
-                    Tag = Instance.new("BillboardGui", pRoot)
-                    Tag.Name = "EspTag"
-                    Tag.Size = UDim2.new(0, 100, 0, 40)
-                    Tag.AlwaysOnTop = true
-                    local L = Instance.new("TextLabel", Tag)
-                    L.Size = UDim2.new(1, 0, 1, 0)
-                    L.BackgroundTransparency = 1
-                    L.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    L.TextSize = 10
-                    L.Font = Enum.Font.GothamBold
-                    L.Name = "TextLabel"
+task.spawn(function()
+    while task.wait(0.5) do
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local pRoot = v.Character.HumanoidRootPart
+                if HitOn then
+                    pRoot.Size = Vector3.new(30, 30, 30)
+                    pRoot.Transparency = 0.7
+                    pRoot.CanCollide = false
+                else
+                    pRoot.Size = Vector3.new(2, 2, 1)
+                    pRoot.Transparency = 1
                 end
-                Tag.TextLabel.Text = v.Name
-            elseif Tag then 
-                Tag:Destroy() 
+                
+                local Tag = pRoot:FindFirstChild("EspTag")
+                if EspOn then
+                    if not Tag then
+                        Tag = Instance.new("BillboardGui", pRoot)
+                        Tag.Name = "EspTag"
+                        Tag.Size = UDim2.new(0, 100, 0, 40)
+                        Tag.AlwaysOnTop = true
+                        local L = Instance.new("TextLabel", Tag)
+                        L.Size = UDim2.new(1, 0, 1, 0)
+                        L.BackgroundTransparency = 1
+                        L.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        L.TextSize = 10
+                        L.Font = Enum.Font.GothamBold
+                        L.Name = "TextLabel"
+                    end
+                    Tag.TextLabel.Text = v.Name
+                elseif Tag then 
+                    Tag:Destroy() 
+                end
             end
         end
     end
