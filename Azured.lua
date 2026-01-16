@@ -1,295 +1,413 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Mobile_Optimized_Script"
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+local Window = Library:CreateWindow({
+    Title = 'Aura | Universal                                        by Stratxgy',
+    Center = true, -- Set Center to true if you want the menu to appear in the center
+    AutoShow = true, -- Set AutoShow to true if you want the menu to appear when it is created
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+    --Position = float (optional)
+    --Size = float (optional)
+})
 
-local IntroLabel = Instance.new("TextLabel")
-IntroLabel.Parent = ScreenGui
-IntroLabel.Size = UDim2.new(1, 0, 0, 50)
-IntroLabel.Position = UDim2.new(0, 0, 0.2, 0) -- Hien o phia tren man hinh
-IntroLabel.BackgroundTransparency = 1
-IntroLabel.Text = "Azured" -- Ban co the doi ten script o day
-IntroLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-IntroLabel.Font = Enum.Font.GothamBold
-IntroLabel.TextSize = 25
-IntroLabel.TextTransparency = 1
+local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/ESP/ESP.lua"))()
+local hbar = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/ESP/hbar.lua"))()
+local viewtracer = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/ESP/ViewTracerESP.lua"))()
+local pname = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/ESP/pname.lua"))()
+local ptool = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/ESP/ptool.lua"))()
+local chams = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Roblox-Chams-Highlight/refs/heads/main/Highlight.lua"))()
+local targethud = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Lua-TargetHud/refs/heads/main/targethud.lua"))()
 
-local IntroStroke = Instance.new("UIStroke", IntroLabel)
-IntroStroke.Thickness = 2
-IntroStroke.Color = Color3.fromRGB(0, 255, 0) -- Vien mau xanh la
-IntroStroke.Transparency = 1
+local Aimbot = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/esp-aimbot/refs/heads/main/Aimbot/aimbot.lua"))()
+local triggerbot = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Roblox-Lua-Triggerbot/refs/heads/main/Triggerbot.lua"))()
 
--- Hieu ung hien thi (Tween)
-task.spawn(function()
-    local TweenService = game:GetService("TweenService")
-    local Info = TweenInfo.new(1, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-    
-    -- Hien len
-    TweenService:Create(IntroLabel, Info, {TextTransparency = 0, Position = UDim2.new(0, 0, 0.25, 0)}):Play()
-    TweenService:Create(IntroStroke, Info, {Transparency = 0}):Play()
-    
-    task.wait(3) -- Cho 3 giay
-    
-    -- Mo di va bien mat
-    TweenService:Create(IntroLabel, Info, {TextTransparency = 1, Position = UDim2.new(0, 0, 0.2, 0)}):Play()
-    TweenService:Create(IntroStroke, Info, {Transparency = 1}):Play()
-    
-    task.wait(1)
-    IntroLabel:Destroy()
-end)
+local speed = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Lua-Speed/refs/heads/main/speed.lua"))()
+local spin = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/spinlock.lua"))()
+local aaimweld = loadstring(game:HttpGet("https://raw.githubusercontent.com/Stratxgy/Aura/refs/heads/main/Modules/aaimweld.lua"))()
 
-local function MakeDraggable(obj)
-    local Dragging, DragInput, DragStart, StartPos
-    obj.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = obj.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then Dragging = false end
-            end)
-        end
-    end)
-    obj.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
-            local Delta = input.Position - DragStart
-            obj.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-        end
-    end)
-end
 
-local function ApplyWhiteAura(char)
-    if not char then return end
-    for _, v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") or v:IsA("MeshPart") then
-            v.Material = Enum.Material.ForceField
-            v.Color = Color3.fromRGB(255, 255, 255)
-        end
+
+local Tabs = {
+    aimbot = Window:AddTab('Aimbot'),
+    visuals = Window:AddTab('Visuals'),
+    player = Window:AddTab('Player'),
+    ['UI Settings'] = Window:AddTab('UI Settings')
+}
+
+local LeftGroupBox = Tabs.aimbot:AddLeftGroupbox('Aimbot')
+
+LeftGroupBox:AddToggle('Aimbot', {
+    Text = 'Aimbot',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'turns on aimbot i think', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        Aimbot.Load()
     end
-end
+})
 
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
-    ApplyWhiteAura(char)
-end)
-if LocalPlayer.Character then ApplyWhiteAura(LocalPlayer.Character) end
-
-local function CreateRoundBtn(text, pos, color)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 65, 0, 65)
-    Btn.Position = pos
-    Btn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Btn.Text = text
-    Btn.TextColor3 = color
-    Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = 11
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
-    local Stroke = Instance.new("UIStroke", Btn)
-    Stroke.Thickness = 3
-    Stroke.Color = color
-    MakeDraggable(Btn)
-    return Btn, Stroke
-end
-
-local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.4, 0), Color3.fromRGB(0, 255, 0))
-
-local MainFrame = Instance.new("Frame")
-MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 110, 0, 185)
-MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BackgroundTransparency = 0.3
-Instance.new("UICorner", MainFrame)
-MakeDraggable(MainFrame)
-
-local MiniBtn = Instance.new("TextButton")
-MiniBtn.Parent = MainFrame
-MiniBtn.Size = UDim2.new(0, 20, 0, 20)
-MiniBtn.Position = UDim2.new(1, -25, 0, 5)
-MiniBtn.Text = "-"
-MiniBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", MiniBtn)
-
-local Content = Instance.new("Frame")
-Content.Parent = MainFrame
-Content.Size = UDim2.new(1, 0, 1, -30)
-Content.Position = UDim2.new(0, 0, 0, 30)
-Content.BackgroundTransparency = 1
-
-MiniBtn.MouseButton1Click:Connect(function()
-    Content.Visible = not Content.Visible
-    if Content.Visible then
-        MainFrame.Size = UDim2.new(0, 110, 0, 185)
-        MiniBtn.Text = "-"
-    else
-        MainFrame.Size = UDim2.new(0, 110, 0, 30)
-        MiniBtn.Text = "+"
+LeftGroupBox:AddDropdown('Lock Part', {
+    Values = { 'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso' },
+    Default = 1, -- number index of the value / string
+    Multi = false, -- true / false, allows multiple choices to be selected
+    Text = 'Lock Part',
+    Tooltip = 'lockpart changer', -- Information shown when you hover over the dropdown
+    Callback = function(Value)
+        getgenv().Aimbot.Settings.LockPart = Value
     end
-end)
+})
 
-local function CreateMenuBtn(name, pos)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = Content
-    Btn.Size = UDim2.new(1, -10, 0, 30)
-    Btn.Position = pos
-    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Btn.Text = name
-    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Btn.Font = Enum.Font.Gotham
-    Btn.TextSize = 10
-    Instance.new("UICorner", Btn)
-    return Btn
-end
 
-local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 0))
-local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 35))
-local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 70))
-local EspBtn = CreateMenuBtn("ESP NAME", UDim2.new(0, 5, 0, 105))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn = nil, false, false, false, false, false
-local Degree = 0
-
-local function GetClosestPlayer()
-    local Target, MinDist = nil, math.huge
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local Hum = v.Character:FindFirstChild("Humanoid")
-            if Hum and Hum.Health > 0 then
-                local Dist = (v.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Magnitude
-                if Dist < MinDist then
-                    MinDist = Dist
-                    Target = v
-                end
-            end
-        end
+LeftGroupBox:AddLabel('Lock Button'):AddKeyPicker('Lock Button', {
+    Default = 'MB2', -- String as the name of the keybind (MB1, MB2 for mouse buttons)
+    Text = 'Lock Button Keybind', -- Text to display in the keybind menu
+    NoUI = false, -- Set to true if you want to hide from the Keybind menu
+    -- Occurs when the keybind itself is changed, `New` is a KeyCode Enum OR a UserInputType Enum
+    ChangedCallback = function(New)
+        getgenv().Aimbot.Settings.TriggerKey = New
     end
-    return Target
-end
+})
 
-LockBtn.MouseButton1Click:Connect(function()
-    StrafeOn = not StrafeOn
-    if StrafeOn then
-        local T = GetClosestPlayer()
-        if T then 
-            LockedPlayer = T
-            LockStroke.Color = Color3.fromRGB(255, 255, 255)
-            Camera.CameraType = Enum.CameraType.Scriptable
-        else 
-            StrafeOn = false 
-        end
-    else
-        LockedPlayer = nil
-        LockStroke.Color = Color3.fromRGB(0, 255, 0)
-        Camera.CameraType = Enum.CameraType.Custom
+
+LeftGroupBox:AddSlider('FOV', {
+    Text = 'FOV Circle',
+    Default = 35,
+    Min = 0,
+    Max = 500,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().Aimbot.FOVSettings.Radius = Value
     end
-end)
+})
 
-SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn; SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn; HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-
-RunService.RenderStepped:Connect(function()
-    local Char = LocalPlayer.Character
-    if not Char or not Char:FindFirstChild("HumanoidRootPart") or not Char:FindFirstChild("Humanoid") then return end
-    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-
-    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        if LockedPlayer.Character.Humanoid.Health <= 0 then
-            StrafeOn = false
-            LockedPlayer = nil
-            LockStroke.Color = Color3.fromRGB(0, 255, 0)
-            Camera.CameraType = Enum.CameraType.Custom
-        else
-            local TRoot = LockedPlayer.Character.HumanoidRootPart
-            Degree = Degree + 1.5
-            local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
-            Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
-            
-            local CamOffset = Vector3.new(0, 5, 12)
-            Camera.CFrame = CFrame.new(TRoot.Position + CamOffset, TRoot.Position)
-        end
+LeftGroupBox:AddLabel('FOVColor'):AddColorPicker('FOV Color', {
+    Default = Color3.new(1, 1, 1),
+    Title = 'FOV Colorpicker', -- Optional. Allows you to have a custom color picker title (when you open it)
+    Callback = function(Value)
+        getgenv().Aimbot.FOVSettings.Color = Value
     end
+})
 
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then
-        Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5)
+LeftGroupBox:AddLabel('FOV Color when Locked'):AddColorPicker('FOV Color when Locked', {
+    Default = Color3.new(1, 0, 0), 
+    Title = 'FOV Colorpicker when locked', -- Optional. Allows you to have a custom color picker title (when you open it)
+    Callback = function(Value)
+        getgenv().Aimbot.FOVSettings.LockedColor = Value
     end
-    
-    if FlyOn and not StrafeOn then
-        Root.Velocity = Vector3.new(0, 0, 0)
-        Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8)
-    end
-end)
+})
 
-task.spawn(function()
-    while task.wait(0.5) do
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                local pRoot = v.Character.HumanoidRootPart
-                if HitOn then
-                    pRoot.Size = Vector3.new(30, 30, 30)
-                    pRoot.Transparency = 0.7
-                    pRoot.CanCollide = false
-                else
-                    pRoot.Size = Vector3.new(2, 2, 1)
-                    pRoot.Transparency = 1
-                end
-                
-                local Tag = pRoot:FindFirstChild("EspTag")
-                if EspOn then
-                    if not Tag then
-                        Tag = Instance.new("BillboardGui", pRoot)
-                        Tag.Name = "EspTag"
-                        Tag.Size = UDim2.new(0, 100, 0, 40)
-                        Tag.AlwaysOnTop = true
-                        local L = Instance.new("TextLabel", Tag)
-                        L.Size = UDim2.new(1, 0, 1, 0)
-                        L.BackgroundTransparency = 1
-                        L.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        L.TextSize = 10
-                        L.Font = Enum.Font.GothamBold
-                        L.Name = "TextLabel"
+LeftGroupBox:AddSlider('Smoothness (lower = faster)', {
+    Text = 'Smoothness (lower = faster)',
+    Default = 0,
+    Min = 0,
+    Max = 5,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().Aimbot.Settings.Sensitivity = Value
+    end
+})
+
+
+
+local LeftGroupBox = Tabs.aimbot:AddLeftGroupbox('Triggerbot')
+
+
+local tbot = LeftGroupBox:AddButton({
+    Text = 'TriggerBot',
+    Func = function()
+        getgenv().triggerbot.load()
+    end,
+    DoubleClick = false,
+    Tooltip = 'probably turns on a triggerbot' -- When you hover over the button this appears
+})
+
+
+LeftGroupBox:AddLabel('TriggerBot Toggle Key'):AddKeyPicker('TriggerBot Toggle Key', {
+
+    Default = 'T', -- String as the name of the keybind (MB1, MB2 for mouse buttons)
+    SyncToggleState = false,
+
+    Text = 'TriggerBot Toggle Key', -- Text to display in the keybind menu
+    NoUI = false, -- Set to true if you want to hide from the Keybind menu
+
+    -- Occurs when the keybind itself is changed, `New` is a KeyCode Enum OR a UserInputType Enum
+    ChangedCallback = function(New)
+        getgenv().triggerbot.Settings.toggleKey = New
+    end
+})
+
+LeftGroupBox:AddSlider('Click Delay (Seconds)', {
+    Text = 'Click Delay (Seconds)',
+    Default = 0,
+    Min = 0,
+    Max = 2,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().triggerbot.Settings.clickDelay = Value
+    end
+})
+
+
+
+
+local RightGroupBox = Tabs.aimbot:AddRightGroupbox('Checks')
+
+RightGroupBox:AddToggle('TeamCheck', {
+    Text = 'Team Check',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'checks if a player is on your team', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().Aimbot.Settings.TeamCheck = Value
+    end
+})
+
+RightGroupBox:AddToggle('Wall Check', {
+    Text = 'Wall Check',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'checks if a player is behind a wall', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().Aimbot.Settings.WallCheck = Value
+    end
+})
+
+RightGroupBox:AddToggle('AliveCheck', {
+    Text = 'Alive Check',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'checks if a player is alive', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().Aimbot.Settings.AliveCheck = Value
+    end
+})
+
+RightGroupBox:AddToggle('Aimbot Toggle (hold / toggle)', {
+    Text = 'Aimbot Toggle (hold / toggle)',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'if its false that means you have to hold the button if true its toggle', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().Aimbot.Settings.Toggle = Value
+    end
+})
+
+
+--// ////// \\\\\\ //////// \\\\\\\\ //////// \\\\\\\ /////// \\\\\\\ /////// \\\\\\\           | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | 
+
+
+local LeftGroupBox = Tabs.visuals:AddLeftGroupbox('Healthbar')
+
+LeftGroupBox:AddToggle('Health Bar', {
+    Text = 'Health Bar',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'hopefully toggles health bar', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().hbar.enabled = Value
+    end
+})
+
+local LeftGroupBox = Tabs.visuals:AddLeftGroupbox('Target Hud')
+
+LeftGroupBox:AddToggle('Target Hud', {
+    Text = 'Target Hud',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'turns on a box displaying information when you hover over people', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().targethud.enabled = Value
+    end
+})
+
+local LeftGroupBox = Tabs.visuals:AddLeftGroupbox('Menu Settings')
+
+LeftGroupBox:AddToggle('Aura Watermark', { 
+    Text = 'Aura Watermark', 
+    Default = false, 
+    Tooltip = 'Aura watermark', 
+    Callback = function(Value)
+        if Value then
+            Library:SetWatermarkVisibility(true)
+            if not _G.WatermarkConnection then
+                local FrameTimer = tick()
+                local FrameCounter = 0
+                local FPS = 60
+                _G.WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
+                    FrameCounter += 1
+                    if (tick() - FrameTimer) >= 1 then
+                        FPS = FrameCounter
+                        FrameTimer = tick()
+                        FrameCounter = 0
                     end
-                    Tag.TextLabel.Text = v.Name
-                elseif Tag then 
-                    Tag:Destroy() 
-                end
+                    Library:SetWatermark(('Aura - Universal | %s fps | %s ms'):format(
+                        math.floor(FPS),
+                        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
+                    ))
+                end)
+            end
+        else
+            Library:SetWatermarkVisibility(false)
+            if _G.WatermarkConnection then
+                _G.WatermarkConnection:Disconnect()
+                _G.WatermarkConnection = nil
             end
         end
     end
-end)
+})
+-- wow that was confusing
 
-local function PlayHitSound()
-    local Sound = Instance.new("Sound", game:GetService("SoundService"))
-    Sound.SoundId = "rbxassetid://1259015179"
-    Sound.Volume = 2
-    Sound:Play()
-    game:GetService("Debris"):AddItem(Sound, 1)
+
+LeftGroupBox:AddToggle('Aura Keybind Window', {
+    Text = 'Aura Keybind Window',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'this probably works correctly', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        Library.KeybindFrame.Visible = Value;
+    end
+})
+
+
+
+local RightGroupBox = Tabs.visuals:AddRightGroupbox('Chams')
+
+RightGroupBox:AddToggle('Chams', {
+    Text = 'Chams',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'basically outline esp', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().chams.enabled = Value
+    end
+})
+
+RightGroupBox:AddToggle('Chams Team Check', {
+    Text = 'Chams Team Check',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'checks if a player is on your team', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().chams.teamCheck = Value
+    end
+})
+
+RightGroupBox:AddLabel('Chams Outline Color'):AddColorPicker('Chams Outline Color', {
+    Default = Color3.new(1, 1, 1), 
+    Title = 'Chams Outline Color Colorpicker', -- Optional. Allows you to have a custom color picker title (when you open it)
+    Transparency = 0, -- Optional. Enables transparency changing for this color picker (leave as nil to disable)
+    Callback = function(Value)
+        getgenv().chams.outlineColor = Value
+    end
+})
+
+RightGroupBox:AddSlider('Chams Outline Transparency', {
+    Text = 'Chams Outline Transparency',
+    Default = 0,
+    Min = 0,
+    Max = 1,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().chams.outlineTransparency = Value
+    end
+})
+
+
+RightGroupBox:AddLabel('Chams Fill Color'):AddColorPicker('Chams Fill Color', {
+    Default = Color3.new(1, 0, 0), 
+    Title = 'Chams Fill Color Colorpicker', -- Optional. Allows you to have a custom color picker title (when you open it)
+    Transparency = 0, -- Optional. Enables transparency changing for this color picker (leave as nil to disable)
+    Callback = function(Value)
+        getgenv().chams.fillColor = Value
+    end
+})
+
+
+RightGroupBox:AddSlider('Chams Fill Transparency', {
+    Text = 'Chams Fill Transparency',
+    Default = 1,
+    Min = 0,
+    Max = 1,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().chams.fillTransparency = Value
+    end
+})
+
+
+--// PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB PLAYERTAB 
+local LeftGroupBox = Tabs.player:AddLeftGroupbox('Speed')
+
+LeftGroupBox:AddToggle('Speed Master Switch', {
+    Text = 'Speed Master Switch',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'sped', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().speed.enabled = Value
+    end
+})
+
+LeftGroupBox:AddLabel('Speed Toggle Button'):AddKeyPicker('Speed Toggle Button', {
+    Default = 'KeypadDivide', -- String as the name of the keybind (MB1, MB2 for mouse buttons)
+    Text = 'Lock Button Keybind', -- Text to display in the keybind menu
+    NoUI = false, -- Set to true if you want to hide from the Keybind menu
+    -- Occurs when the keybind itself is changed, `New` is a KeyCode Enum OR a UserInputType Enum
+    ChangedCallback = function(New)
+        getgenv().speed.keybind = New
+    end
+})
+
+LeftGroupBox:AddSlider('Speed Amount', {
+    Text = 'Speed Amount',
+    Default = 16,
+    Min = 1,
+    Max = 300,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().speed.speed = Value
+    end
+})
+
+LeftGroupBox:AddToggle('Enhanced Control', {
+    Text = 'Enhanced Control',
+    Default = false, -- Default value (true / false)
+    Tooltip = 'Usually you slide all around, but this makes you not do that', -- Information shown when you hover over the toggle
+    Callback = function(Value)
+        getgenv().speed.control = Value
+    end
+})
+
+LeftGroupBox:AddSlider('Control Amount (Friction)', {
+    Text = 'Control Amount (Friction)',
+    Default = 2.0,
+    Min = 1,
+    Max = 5,
+    Rounding = 1,
+    Compact = false,
+    Callback = function(Value)
+        getgenv().speed.friction = Value
+    end
+})
+
+
+
+local function convertToKeyCode(input)
+    local keyMappings = {
+        LeftAlt = Enum.KeyCode.LeftAlt
+    }
+    return keyMappings[input] or input
 end
 
-local function TrackHits(v)
-    v.CharacterAdded:Connect(function(char)
-        local hum = char:WaitForChild("Humanoid")
-        local lastH = hum.Health
-        hum.HealthChanged:Connect(function(health)
-            if health < lastH then PlayHitSound() end
-            lastH = health
-        end)
-    end)
-end
-
-for _, v in pairs(Players:GetPlayers()) do
-    if v ~= LocalPlayer then TrackHits(v) end
-end
-Players.PlayerAdded:Connect(TrackHits)
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'LeftAlt', NoUI = true, Text = 'Menu keybind' })
+Library.ToggleKeybind = Options.MenuKeybind -- Allows you to have a custom keybind for the menu
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+ThemeManager:SetFolder('Aura')
+SaveManager:SetFolder('Aura/Da Hood')
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+SaveManager:LoadAutoloadConfig()
