@@ -6,31 +6,32 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 Library.ScreenGui.IgnoreGuiInset = true
 
 local Window = Library:CreateWindow({
-    Title = "Azured",
+    Title = "AURA | MOBILE COMPACT",
     Center = true,
     AutoShow = true,
-    TabPadding = 4,
-    MenuFadeTime = 0.2
+    TabPadding = 2,
+    MenuFadeTime = 0.1
 })
 
-Library.Minimized = false
+local MainHolder = Window.Holder
+MainHolder.Size = UDim2.new(0.5, 0, 0.5, 0)
+MainHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainHolder.AnchorPoint = Vector2.new(0.5, 0.5)
 
 local MobileGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local OpenBtn = Instance.new("TextButton", MobileGui)
-local Corner = Instance.new("UICorner", OpenBtn)
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
 local Stroke = Instance.new("UIStroke", OpenBtn)
 
 OpenBtn.Name = "MobileToggle"
-OpenBtn.Size = UDim2.new(0, 45, 0, 45)
-OpenBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
+OpenBtn.Size = UDim2.new(0, 40, 0, 40)
+OpenBtn.Position = UDim2.new(0.12, 0, 0.12, 0)
 OpenBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 OpenBtn.Text = "K"
 OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
 OpenBtn.Font = Enum.Font.GothamBold
-OpenBtn.TextSize = 18
-OpenBtn.ZIndex = 100
-
-Corner.CornerRadius = UDim.new(1, 0)
+OpenBtn.TextSize = 16
+OpenBtn.ZIndex = 1000
 Stroke.Thickness = 1.5
 Stroke.Color = Color3.fromRGB(255, 0, 0)
 
@@ -61,27 +62,13 @@ end)
 
 local Tabs = {
     Combat = Window:AddTab("Combat"),
-    Visuals = Window:AddTab("Visuals"),
     Settings = Window:AddTab("Settings")
 }
 
-local MainBox = Tabs.Combat:AddLeftGroupbox("Main Features")
+local MainBox = Tabs.Combat:AddLeftGroupbox("Main")
 MainBox:AddToggle("SAim", { Text = "Silent Aim", Default = false, Callback = function(v) getgenv().SA = v end })
 
-local EspBox = Tabs.Visuals:AddLeftGroupbox("ESP")
-EspBox:AddToggle("EName", { Text = "Show Names", Default = false, Callback = function(v) getgenv().EN = v end })
-
 local MenuBox = Tabs.Settings:AddLeftGroupbox("Menu")
-MenuBox:AddButton("Close Script", function() 
-    Library:Unload() 
-    MobileGui:Destroy()
-end)
+MenuBox:AddButton("Unload", function() Library:Unload() MobileGui:Destroy() end)
 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-ThemeManager:SetFolder("KenyaiHub")
-SaveManager:SetFolder("KenyaiHub/Mobile")
-SaveManager:BuildConfigSection(Tabs.Settings)
-ThemeManager:ApplyToTab(Tabs.Settings)
-
-Library:Notify("Giao dien da duoc toi uu cho Mobile!")
+Library:Notify("Menu da duoc thu nho 50% de phu hop Mobile!")
