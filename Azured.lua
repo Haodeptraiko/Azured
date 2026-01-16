@@ -269,3 +269,27 @@ task.spawn(function()
         end
     end
 end)
+
+local function PlayHitSound()
+    local Sound = Instance.new("Sound", game:GetService("SoundService"))
+    Sound.SoundId = "rbxassetid://1259015179"
+    Sound.Volume = 2
+    Sound:Play()
+    game:GetService("Debris"):AddItem(Sound, 1)
+end
+
+local function TrackHits(v)
+    v.CharacterAdded:Connect(function(char)
+        local hum = char:WaitForChild("Humanoid")
+        local lastH = hum.Health
+        hum.HealthChanged:Connect(function(health)
+            if health < lastH then PlayHitSound() end
+            lastH = health
+        end)
+    end)
+end
+
+for _, v in pairs(Players:GetPlayers()) do
+    if v ~= LocalPlayer then TrackHits(v) end
+end
+Players.PlayerAdded:Connect(TrackHits)
