@@ -2,118 +2,14 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-getgenv().selectedHitsound = "rbxassetid://6607142036"
-getgenv().hitsoundEnabled = true
-
-local FovSize = 300 
-local TracerColor = Color3.fromRGB(255, 50, 50) 
-
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_Final_V5"
+ScreenGui.Name = "Azured_Mobile_V11"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
-
-local function CreateAura(Char)
-    if not Char then return end
-    local Root = Char:WaitForChild("HumanoidRootPart", 10)
-    local Head = Char:WaitForChild("Head", 10)
-    local Torso = Char:FindFirstChild("UpperTorso") or Char:FindFirstChild("Torso")
-    
-    if not Root or not Head or not Torso then return end
-
-    if Char:FindFirstChild("AzuredAura") then Char.AzuredAura:Destroy() end
-    local AuraFolder = Instance.new("Folder", Char)
-    AuraFolder.Name = "AzuredAura"
-
-    local Halo = Instance.new("Part", AuraFolder)
-    Halo.Size = Vector3.new(2, 0.1, 2)
-    Halo.Color = Color3.fromRGB(255, 0, 0)
-    Halo.Material = Enum.Material.Neon
-    Halo.CanCollide = false
-    Halo.CanTouch = false
-    local HaloMesh = Instance.new("SpecialMesh", Halo)
-    HaloMesh.MeshId = "rbxassetid://11419736442"
-    HaloMesh.Scale = Vector3.new(0.008, 0.008, 0.008)
-    local HaloWeld = Instance.new("Weld", Halo)
-    HaloWeld.Part0 = Halo
-    HaloWeld.Part1 = Head
-    HaloWeld.C0 = CFrame.new(0, -1.5, 0)
-
-    local Wings = Instance.new("Part", AuraFolder)
-    Wings.Size = Vector3.new(2, 2, 2)
-    Wings.Color = Color3.fromRGB(255, 0, 0)
-    Wings.Material = Enum.Material.Neon
-    Wings.CanCollide = false
-    Wings.CanTouch = false
-    Wings.Transparency = 0.2
-    local WingsMesh = Instance.new("SpecialMesh", Wings)
-    WingsMesh.MeshId = "rbxassetid://12140411823"
-    WingsMesh.Scale = Vector3.new(0.06, 0.06, 0.06)
-    local WingsWeld = Instance.new("Weld", Wings)
-    WingsWeld.Part0 = Wings
-    WingsWeld.Part1 = Torso
-    WingsWeld.C0 = CFrame.new(0, -0.5, 1) * CFrame.Angles(0, math.rad(180), 0)
-
-    local Circle = Instance.new("Part", AuraFolder)
-    Circle.Size = Vector3.new(6, 0.1, 6)
-    Circle.Color = Color3.fromRGB(255, 0, 0)
-    Circle.Material = Enum.Material.Neon
-    Circle.Transparency = 0.6
-    Circle.CanCollide = false
-    Circle.CanTouch = false
-    local CircleMesh = Instance.new("SpecialMesh", Circle)
-    CircleMesh.MeshType = Enum.MeshType.Cylinder
-    local CircleWeld = Instance.new("Weld", Circle)
-    CircleWeld.Part0 = Circle
-    CircleWeld.Part1 = Root
-    CircleWeld.C0 = CFrame.new(0, 3, 0)
-end
-
-LocalPlayer.CharacterAdded:Connect(CreateAura)
-if LocalPlayer.Character then CreateAura(LocalPlayer.Character) end
-
-local FovCircle = Instance.new("Frame")
-FovCircle.Parent = ScreenGui
-FovCircle.Size = UDim2.new(0, FovSize, 0, FovSize)
-FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-FovCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-FovCircle.BackgroundTransparency = 0.95
-FovCircle.Visible = true
-Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
-local FovStroke = Instance.new("UIStroke", FovCircle)
-FovStroke.Thickness = 1
-FovStroke.Color = Color3.fromRGB(255, 255, 255)
-
-local TracerLines = {}
-
-local function GetTracer(playerName)
-    if not TracerLines[playerName] then
-        if Drawing then
-            local line = Drawing.new("Line")
-            line.Visible = false
-            line.Thickness = 1.5
-            line.Color = TracerColor
-            line.Transparency = 0.8
-            TracerLines[playerName] = line
-        else
-            return nil 
-        end
-    end
-    return TracerLines[playerName]
-end
-
-Players.PlayerRemoving:Connect(function(player)
-    if TracerLines[player.Name] then
-        TracerLines[player.Name]:Remove()
-        TracerLines[player.Name] = nil
-    end
-end)
 
 local function Notify(text, color)
     local NotifyLabel = Instance.new("TextLabel")
@@ -135,81 +31,6 @@ local function Notify(text, color)
     end)
 end
 
-local function playHitsound()
-    if getgenv().hitsoundEnabled then
-        local sound = Instance.new("Sound")
-        sound.SoundId = getgenv().selectedHitsound
-        sound.Volume = 3
-        sound.Parent = SoundService
-        sound:Play()
-        sound.Ended:Connect(function() sound:Destroy() end)
-    end
-end
-
-local lastHealth = {}
-local function trackHealth()
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
-            local hum = v.Character.Humanoid
-            if lastHealth[v.Name] and hum.Health < lastHealth[v.Name] then
-                playHitsound()
-            end
-            lastHealth[v.Name] = hum.Health
-        end
-    end
-end
-
-local function GetClosestTargetToCenter()
-    local Target = nil
-    local ClosestDist = FovCircle.AbsoluteSize.X / 2 
-    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("LowerTorso") and v.Character.Humanoid.Health > 0 then
-            local ScreenPos, OnScreen = Camera:WorldToScreenPoint(v.Character.LowerTorso.Position)
-            if OnScreen then
-                local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
-                if Dist < ClosestDist then
-                    ClosestDist = Dist
-                    Target = v
-                end
-            end
-        end
-    end
-    return Target
-end
-
-local mt = getrawmetatable(game)
-local oldIndex = mt.__index
-local oldNamecall = mt.__namecall
-setreadonly(mt, false)
-
-mt.__index = newcclosure(function(t, k)
-    if t == Mouse and (k == "Hit" or k == "Target") then
-        local Target = GetClosestTargetToCenter()
-        if Target and Target.Character:FindFirstChild("LowerTorso") then
-            return k == "Hit" and Target.Character.LowerTorso.CFrame or Target.Character.LowerTorso
-        end
-    end
-    return oldIndex(t, k)
-end)
-
-mt.__namecall = newcclosure(function(self, ...)
-    local args = {...}
-    local method = getnamecallmethod()
-    if method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
-            local Target = GetClosestTargetToCenter()
-            if Target and Target.Character:FindFirstChild("LowerTorso") then
-                args[2] = Target.Character.LowerTorso.Position
-                return oldNamecall(self, unpack(args))
-            end
-        end
-    end
-    return oldNamecall(self, ...)
-end)
-setreadonly(mt, true)
-
 local function MakeDraggable(obj)
     local Dragging, DragInput, DragStart, StartPos
     obj.InputBegan:Connect(function(input)
@@ -230,14 +51,13 @@ end
 local function CreateRoundBtn(text, pos, color)
     local Btn = Instance.new("TextButton")
     Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 70, 0, 70)
+    Btn.Size = UDim2.new(0, 65, 0, 65)
     Btn.Position = pos
-    Btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-    Btn.BackgroundTransparency = 0.2
+    Btn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     Btn.Text = text
     Btn.TextColor3 = color
     Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = 16
+    Btn.TextSize = 11
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
     local Stroke = Instance.new("UIStroke", Btn)
     Stroke.Thickness = 3
@@ -246,37 +66,22 @@ local function CreateRoundBtn(text, pos, color)
     return Btn, Stroke
 end
 
-local LockBtn, LockStroke = CreateRoundBtn("AIM: OFF", UDim2.new(0.8, 0, 0.4, 0), Color3.fromRGB(150, 150, 150))
+local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.4, 0), Color3.fromRGB(0, 255, 0))
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 110, 0, 255)
+MainFrame.Size = UDim2.new(0, 110, 0, 195)
 MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BackgroundTransparency = 0.3
 Instance.new("UICorner", MainFrame)
 MakeDraggable(MainFrame)
 
-local MiniBtn = Instance.new("TextButton")
-MiniBtn.Parent = MainFrame
-MiniBtn.Size = UDim2.new(0, 20, 0, 20)
-MiniBtn.Position = UDim2.new(1, -25, 0, 5)
-MiniBtn.Text = "-"
-MiniBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", MiniBtn)
-
 local Content = Instance.new("Frame")
 Content.Parent = MainFrame
-Content.Size = UDim2.new(1, 0, 1, -30)
-Content.Position = UDim2.new(0, 0, 0, 30)
+Content.Size = UDim2.new(1, 0, 1, -10)
+Content.Position = UDim2.new(0, 0, 0, 5)
 Content.BackgroundTransparency = 1
-
-MiniBtn.MouseButton1Click:Connect(function()
-    Content.Visible = not Content.Visible
-    MainFrame.Size = Content.Visible and UDim2.new(0, 110, 0, 255) or UDim2.new(0, 110, 0, 30)
-    MiniBtn.Text = Content.Visible and "-" or "+"
-end)
 
 local function CreateMenuBtn(name, pos)
     local Btn = Instance.new("TextButton")
@@ -292,36 +97,46 @@ local function CreateMenuBtn(name, pos)
     return Btn
 end
 
-local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 0))
-local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 35))
-local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 70))
-local EspBtn = CreateMenuBtn("ESP", UDim2.new(0, 5, 0, 105))
-local AntiBtn = CreateMenuBtn("ANTI", UDim2.new(0, 5, 0, 140))
-local SoundBtn = CreateMenuBtn("SOUND: ON", UDim2.new(0, 5, 0, 175))
+local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 5))
+local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 40))
+local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 75))
+local EspBtn = CreateMenuBtn("ESP", UDim2.new(0, 5, 0, 110))
+local SilentBtn = CreateMenuBtn("SILENT: OFF", UDim2.new(0, 5, 0, 145))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, AntiOn = nil, false, false, false, false, false, false
+local HitSize = 15
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, SilentOn = nil, false, false, false, false, false, false
 local Degree = 0
-local AntiVelocity = -1.85
+
+local function GetClosestTarget()
+    local Target, MinDist = nil, math.huge
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local Hum = v.Character:FindFirstChild("Humanoid")
+            if Hum and Hum.Health > 0 then
+                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+                local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                if Dist < MinDist then MinDist = Dist; Target = v end
+            end
+        end
+    end
+    return Target
+end
 
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
-        local Target = GetClosestTargetToCenter()
+        local Target = GetClosestTarget()
         if Target then 
             LockedPlayer = Target 
-            LockBtn.Text = "AIM: ON"
-            LockBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-            LockStroke.Color = Color3.fromRGB(0, 255, 255) 
+            LockStroke.Color = Color3.fromRGB(255, 255, 255) 
             Camera.CameraType = Enum.CameraType.Scriptable
+            Notify("Azured", Color3.fromRGB(0, 255, 255))
         else 
             StrafeOn = false 
-            Notify("No Target in FOV!", Color3.fromRGB(255, 0, 0))
         end
     else 
         LockedPlayer = nil 
-        LockBtn.Text = "AIM: OFF"
-        LockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-        LockStroke.Color = Color3.fromRGB(150, 150, 150) 
+        LockStroke.Color = Color3.fromRGB(0, 255, 0) 
         Camera.CameraType = Enum.CameraType.Custom 
     end
 end)
@@ -330,75 +145,90 @@ SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Tex
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-AntiBtn.MouseButton1Click:Connect(function() AntiOn = not AntiOn AntiBtn.TextColor3 = AntiOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-SoundBtn.MouseButton1Click:Connect(function() getgenv().hitsoundEnabled = not getgenv().hitsoundEnabled SoundBtn.Text = getgenv().hitsoundEnabled and "SOUND: ON" or "SOUND: OFF" SoundBtn.TextColor3 = getgenv().hitsoundEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+
+SilentBtn.MouseButton1Click:Connect(function() 
+    SilentOn = not SilentOn 
+    SilentBtn.Text = SilentOn and "SILENT: ON" or "SILENT: OFF"
+    SilentBtn.TextColor3 = SilentOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) 
+    Notify("Azured", Color3.fromRGB(255, 255, 255))
+end)
+
+local mt = getrawmetatable(game)
+local oldIndex = mt.__index
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+
+mt.__index = newcclosure(function(t, k)
+    if SilentOn and t == Mouse then
+        local Target = LockedPlayer or GetClosestTarget()
+        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
+            if k == "Hit" then 
+                return Target.Character.Head.CFrame 
+            elseif k == "Target" then 
+                return Target.Character.Head 
+            end
+        end
+    end
+    return oldIndex(t, k)
+end)
+
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    
+    if SilentOn and (method == "FireServer" or method == "InvokeServer") then
+        local Target = LockedPlayer or GetClosestTarget()
+        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
+            for i, v in pairs(args) do
+                if typeof(v) == "Vector3" then
+                    args[i] = Target.Character.Head.Position
+                end
+            end
+            return oldNamecall(self, unpack(args))
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-    trackHealth()
     
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
-        Degree = Degree + 0.05
+        Degree = Degree + 1.5
         local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
         Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, TRoot.Position)
+        Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
     end
     
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 1.5) end
-    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 2.5) end
-    if AntiOn and Hum.MoveDirection.Magnitude > 0 then 
-        Root.CFrame = Root.CFrame + (Hum.MoveDirection * AntiVelocity)
-        Root.Velocity = Hum.MoveDirection * (AntiVelocity * 50)
-    end
-
-    local CenterScreen = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local FovRadius = FovCircle.AbsoluteSize.X / 2 
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
 
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer then
-            local tracer = GetTracer(v.Name)
-            local showTracer = false
-
-            if v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character.Humanoid.Health > 0 then
-                local ScreenPos, OnScreen = Camera:WorldToScreenPoint(v.Character.HumanoidRootPart.Position)
-                if OnScreen then
-                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - CenterScreen).Magnitude
-                    if Dist <= FovRadius then
-                        if tracer then
-                            tracer.From = CenterScreen
-                            tracer.To = Vector2.new(ScreenPos.X, ScreenPos.Y)
-                            showTracer = true
-                        end
-                    end
-                end
-            end
-            if tracer then tracer.Visible = showTracer end
-
-            if v.Character and HitOn and v.Character:FindFirstChild("HumanoidRootPart") then
-                v.Character.HumanoidRootPart.Size = Vector3.new(15, 15, 15)
-                v.Character.HumanoidRootPart.Transparency = 0.8
-                v.Character.HumanoidRootPart.CanCollide = false
-            elseif v.Character and not HitOn and v.Character:FindFirstChild("HumanoidRootPart") then
-                v.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
-                v.Character.HumanoidRootPart.Transparency = 1
-            end
+        if v ~= LocalPlayer and v.Character then
+            local pRoot = v.Character:FindFirstChild("HumanoidRootPart")
+            if EspOn and pRoot then
+                local Tag = pRoot:FindFirstChild("EspTag") or Instance.new("BillboardGui", pRoot)
+                Tag.Name = "EspTag" Tag.Size = UDim2.new(4, 0, 2, 0) Tag.AlwaysOnTop = true
+                local L = Tag:FindFirstChild("TextLabel") or Instance.new("TextLabel", Tag)
+                L.Name = "TextLabel" L.Size = UDim2.new(1, 0, 1, 0) L.BackgroundTransparency = 1 L.TextSize = 12 L.Font = Enum.Font.GothamBold
+                local HP = v.Character.Humanoid and math.floor(v.Character.Humanoid.Health) or 0
+                L.Text = v.Name .. "\nHP: " .. HP L.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
+            elseif pRoot and pRoot:FindFirstChild("EspTag") then pRoot.EspTag:Destroy() end
             
-            if v.Character and EspOn then
-                if not v.Character:FindFirstChild("Highlight") then
-                    local Highlight = Instance.new("Highlight", v.Character)
-                    Highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                    Highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                end
-            elseif v.Character and not EspOn then
-                if v.Character:FindFirstChild("Highlight") then
-                    v.Character.Highlight:Destroy()
-                end
+            if HitOn and pRoot then 
+                pRoot.Size = Vector3.new(HitSize, HitSize, HitSize) 
+                pRoot.Transparency = 0.7 
+                pRoot.CanCollide = false
+            elseif pRoot then 
+                pRoot.Size = Vector3.new(2, 2, 1) 
+                pRoot.Transparency = 1 
             end
         end
     end
 end)
 
-Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
+Notify("Azured", Color3.fromRGB(0, 255, 0))
