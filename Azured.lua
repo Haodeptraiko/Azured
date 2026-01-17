@@ -14,6 +14,18 @@ ScreenGui.Name = "Azured_Mobile_Final_V3"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
+local FovCircle = Instance.new("Frame")
+FovCircle.Parent = ScreenGui
+FovCircle.Size = UDim2.new(0, 150, 0, 150)
+FovCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+FovCircle.BackgroundTransparency = 0.9
+FovCircle.Visible = false
+local FovCorner = Instance.new("UICorner", FovCircle)
+FovCorner.CornerRadius = UDim.new(1, 0)
+local FovStroke = Instance.new("UIStroke", FovCircle)
+FovStroke.Thickness = 1
+FovStroke.Color = Color3.fromRGB(255, 255, 255)
+
 local function Notify(text, color)
     local NotifyLabel = Instance.new("TextLabel")
     NotifyLabel.Parent = ScreenGui
@@ -95,7 +107,7 @@ local function CreateRoundBtn(text, pos, color)
     Btn.Text = text
     Btn.TextColor3 = color
     Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = 11
+    Btn.TextSize = 25
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
     local Stroke = Instance.new("UIStroke", Btn)
     Stroke.Thickness = 3
@@ -104,7 +116,7 @@ local function CreateRoundBtn(text, pos, color)
     return Btn, Stroke
 end
 
-local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.4, 0), Color3.fromRGB(0, 255, 0))
+local LockBtn, LockStroke = CreateRoundBtn("🔓", UDim2.new(0.8, 0, 0.4, 0), Color3.fromRGB(0, 255, 0))
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
@@ -228,9 +240,22 @@ LockBtn.MouseButton1Click:Connect(function()
                 end
             end
         end
-        if Target then LockedPlayer = Target LockStroke.Color = Color3.fromRGB(255, 255, 255) Camera.CameraType = Enum.CameraType.Scriptable
-        else StrafeOn = false end
-    else LockedPlayer = nil LockStroke.Color = Color3.fromRGB(0, 255, 0) Camera.CameraType = Enum.CameraType.Custom end
+        if Target then 
+            LockedPlayer = Target 
+            LockBtn.Text = "🔒"
+            LockStroke.Color = Color3.fromRGB(255, 255, 255) 
+            Camera.CameraType = Enum.CameraType.Scriptable
+            FovCircle.Visible = true
+        else 
+            StrafeOn = false 
+        end
+    else 
+        LockedPlayer = nil 
+        LockBtn.Text = "🔓"
+        LockStroke.Color = Color3.fromRGB(0, 255, 0) 
+        Camera.CameraType = Enum.CameraType.Custom 
+        FovCircle.Visible = false
+    end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
@@ -239,6 +264,32 @@ EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 
 AntiBtn.MouseButton1Click:Connect(function() AntiOn = not AntiOn AntiBtn.TextColor3 = AntiOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 SoundBtn.MouseButton1Click:Connect(function() getgenv().hitsoundEnabled = not getgenv().hitsoundEnabled SoundBtn.Text = getgenv().hitsoundEnabled and "SOUND: ON" or "SOUND: OFF" SoundBtn.TextColor3 = getgenv().hitsoundEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
+local mt = getrawmetatable(game)
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    if method == "FireServer" and self.Name == "MainEvent" and LockedPlayer then
+        if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
+            local TargetPart = LockedPlayer.Character:FindFirstChild("LowerTorso")
+            if TargetPart then
+                local ScreenPos, OnScreen = Camera:WorldToScreenPoint(TargetPart.Position)
+                if OnScreen then
+                    local MousePos = UserInputService:GetMouseLocation()
+                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
+                    if Dist <= 75 then
+                        args[2] = TargetPart.Position
+                        return oldNamecall(self, unpack(args))
+                    end
+                end
+            end
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
@@ -246,10 +297,17 @@ RunService.RenderStepped:Connect(function()
     trackHealth()
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
+        local TTorso = LockedPlayer.Character:FindFirstChild("LowerTorso")
         Degree = Degree + 1.5
         local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
         Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
         Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
+        if TTorso then
+            local ScreenPos, OnScreen = Camera:WorldToScreenPoint(TTorso.Position)
+            if OnScreen then
+                FovCircle.Position = UDim2.new(0, ScreenPos.X - 75, 0, ScreenPos.Y - 75)
+            end
+        end
     end
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
     if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
@@ -274,4 +332,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
+Notify("Azured.gg Loaded!", Color3.fromRGB(0, 255, 0))
