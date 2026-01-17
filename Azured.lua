@@ -29,6 +29,19 @@ local function Notify(text, color)
     end)
 end
 
+local function ApplyAura(char)
+    task.wait(0.5)
+    for _, v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") or v:IsA("MeshPart") then
+            v.Material = Enum.Material.ForceField
+            v.Color = Color3.fromRGB(255, 255, 255)
+        end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(ApplyAura)
+if LocalPlayer.Character then ApplyAura(LocalPlayer.Character) end
+
 local function MakeDraggable(obj)
     local Dragging, DragInput, DragStart, StartPos
     obj.InputBegan:Connect(function(input)
@@ -81,11 +94,31 @@ MainFrame.BackgroundTransparency = 0.3
 Instance.new("UICorner", MainFrame)
 MakeDraggable(MainFrame)
 
+local MiniBtn = Instance.new("TextButton")
+MiniBtn.Parent = MainFrame
+MiniBtn.Size = UDim2.new(0, 20, 0, 20)
+MiniBtn.Position = UDim2.new(1, -25, 0, 5)
+MiniBtn.Text = "-"
+MiniBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", MiniBtn)
+
 local Content = Instance.new("Frame")
 Content.Parent = MainFrame
 Content.Size = UDim2.new(1, 0, 1, -30)
 Content.Position = UDim2.new(0, 0, 0, 30)
 Content.BackgroundTransparency = 1
+
+MiniBtn.MouseButton1Click:Connect(function()
+    Content.Visible = not Content.Visible
+    if Content.Visible then
+        MainFrame.Size = UDim2.new(0, 110, 0, 185)
+        MiniBtn.Text = "-"
+    else
+        MainFrame.Size = UDim2.new(0, 110, 0, 30)
+        MiniBtn.Text = "+"
+    end
+end)
 
 local function CreateMenuBtn(name, pos)
     local Btn = Instance.new("TextButton")
@@ -204,13 +237,11 @@ LockBtn.MouseButton1Click:Connect(function()
             LockedPlayer = Target
             LockStroke.Color = Color3.fromRGB(255, 255, 255)
             Camera.CameraType = Enum.CameraType.Scriptable
-            Notify("Lock & Auto Shoot: ON", Color3.fromRGB(0, 255, 0))
         else StrafeOn = false end
     else
         LockedPlayer = nil
         LockStroke.Color = Color3.fromRGB(0, 255, 0)
         Camera.CameraType = Enum.CameraType.Custom
-        Notify("Lock & Auto Shoot: OFF", Color3.fromRGB(255, 0, 0))
     end
 end)
 
@@ -275,4 +306,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
+Notify("Azured Mobile!", Color3.fromRGB(0, 255, 0))
