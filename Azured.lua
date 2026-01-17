@@ -9,6 +9,7 @@ local Mouse = LocalPlayer:GetMouse()
 
 getgenv().selectedHitsound = "rbxassetid://6607142036"
 getgenv().hitsoundEnabled = true
+getgenv().PredictionAmount = 0.165
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Azured_Mobile_Final_V3"
@@ -17,7 +18,7 @@ ScreenGui.ResetOnSpawn = false
 
 local FovCircle = Instance.new("Frame")
 FovCircle.Parent = ScreenGui
-FovCircle.Size = UDim2.new(0, 150, 0, 150)
+FovCircle.Size = UDim2.new(0, 200, 0, 200)
 FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
 FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FovCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -72,7 +73,7 @@ local function trackHealth()
 end
 
 local function GetClosestTargetToCenter()
-    local Target, ClosestDist = nil, 75
+    local Target, ClosestDist = nil, 100
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("LowerTorso") and v.Character.Humanoid.Health > 0 then
@@ -95,7 +96,8 @@ mt.__index = newcclosure(function(t, k)
     if t == Mouse and (k == "Hit" or k == "Target") then
         local Target = GetClosestTargetToCenter()
         if Target and Target.Character:FindFirstChild("LowerTorso") then
-            return k == "Hit" and Target.Character.LowerTorso.CFrame or Target.Character.LowerTorso
+            local Prediction = Target.Character.LowerTorso.Position + (Target.Character.LowerTorso.Velocity * getgenv().PredictionAmount)
+            return k == "Hit" and CFrame.new(Prediction) or Target.Character.LowerTorso
         end
     end
     return oldIndex(t, k)
@@ -108,7 +110,7 @@ mt.__namecall = newcclosure(function(self, ...)
         if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
             local Target = GetClosestTargetToCenter()
             if Target and Target.Character:FindFirstChild("LowerTorso") then
-                args[2] = Target.Character.LowerTorso.Position
+                args[2] = Target.Character.LowerTorso.Position + (Target.Character.LowerTorso.Velocity * getgenv().PredictionAmount)
                 return oldNamecall(self, unpack(args))
             end
         end
