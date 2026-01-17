@@ -5,125 +5,97 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 Library.ScreenGui.IgnoreGuiInset = true
 
-local Window = Library:CreateWindow({
-    Title = "                     $ Seizure.gg | Mobile Fix                   ",
+local Window = Library:CreateWindow({ 
+    Title = "                     $ Azured.gg |  discord.gg                    ", 
     Center = true,
-    AutoShow = true,
-    TabPadding = 4,
-    MenuFadeTime = 0.2
+    AutoShow = true, 
+    TabPadding = 2, 
+    MenuFadeTime = 0.2 
 })
 
 Window.Holder.Size = UDim2.new(0, 450, 0, 300)
 
-local Tabs = {
-    Main = Window:AddTab("Main"),
-    Character = Window:AddTab("Character"),
-    Visuals = Window:AddTab("Visuals"),
-    Misc = Window:AddTab("Misc"),
+local Tabs = { 
+    Main = Window:AddTab("Main"), 
+    Character = Window:AddTab("Character"), 
+    Visuals = Window:AddTab("Visuals"), 
+    Misc = Window:AddTab("Misc"), 
     Players = Window:AddTab("Players"),
-    ["UI Settings"] = Window:AddTab("UI Settings")
+    ["UI Settings"] = Window:AddTab("UI Settings") 
 }
 
-local LocalPlayer = game:GetService("Players").LocalPlayer
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+getgenv().ESP = { Enabled = false, Color = Color3.fromRGB(255, 255, 255), Rainbow = false, Boxes = false, Names = false, Tracers = false, Objects = setmetatable({}, {__mode = "kv"}) }
+getgenv().hbar = { enabled = false, barThickness = 3, greenThickness = 1.5, barColor = Color3.fromRGB(0, 0, 0), greenColor = Color3.fromRGB(0, 255, 0) }
+getgenv().pname = { Color = Color3.fromRGB(255, 255, 255), Enabled = false, Position = "Above", Size = 10 }
+getgenv().ptool = { Color = Color3.fromRGB(255, 255, 255), Enabled = false, Position = "Above", Size = 10 }
+getgenv().viewtracer = { Enabled = false, Color = Color3.fromRGB(255, 203, 138), Thickness = 1, Transparency = 1, AutoThickness = true, Length = 15, Smoothness = 0.2 }
 
-local lockedTarget = nil
-local StickyAimEnabled = false
-local ViewTargetEnabled = false
-local targetHitPart = "Head"
-local strafeEnabled = false
-local maddieplsnomad = false
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Camera = workspace.CurrentCamera
+local VT = getgenv().viewtracer
+
+local function CreateViewTracer(plr)
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Transparency = 1
+    
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if VT.Enabled and plr.Character and plr.Character:FindFirstChild("Head") and plr.Character.Humanoid.Health > 0 then
+            local head = plr.Character.Head
+            local headpos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            
+            if onScreen then
+                local offsetCFrame = CFrame.new(0, 0, -VT.Length)
+                local targetWorldPos = head.CFrame:ToWorldSpace(offsetCFrame).Position
+                local targetScreenPos, targetVis = Camera:WorldToViewportPoint(targetWorldPos)
+                
+                if targetVis then
+                    line.From = Vector2.new(headpos.X, headpos.Y)
+                    line.To = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
+                    line.Color = VT.Color
+                    
+                    if VT.AutoThickness then
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - head.Position).magnitude
+                        line.Thickness = math.clamp(1/dist*100, 0.1, 3)
+                    else
+                        line.Thickness = VT.Thickness
+                    end
+                    
+                    line.Visible = true
+                else line.Visible = false end
+            else line.Visible = false end
+        else
+            line.Visible = false
+            if not plr.Parent then line:Delete() end
+        end
+    end)
+end
+
+for _, p in next, game:GetService("Players"):GetPlayers() do if p ~= LocalPlayer then CreateViewTracer(p) end end
+game:GetService("Players").PlayerAdded:Connect(function(p) CreateViewTracer(p) end)
+
+local VisualBox = Tabs.Visuals:AddLeftGroupbox("ESP & Health")
+VisualBox:AddToggle("EspMaster", {Text = "Enable ESP Boxes", Default = false, Callback = function(v) getgenv().ESP.Enabled = v getgenv().ESP.Boxes = v end})
+VisualBox:AddToggle("HBarToggle", {Text = "Show Health Bar", Default = false, Callback = function(v) getgenv().hbar.enabled = v end})
+
+local TracerBox = Tabs.Visuals:AddLeftGroupbox("View Tracer")
+TracerBox:AddToggle("VTToggle", {Text = "Enable View Tracer", Default = false, Callback = function(v) VT.Enabled = v end})
+TracerBox:AddSlider("VTLength", {Text = "Tracer Length", Default = 15, Min = 5, Max = 50, Rounding = 0, Callback = function(v) VT.Length = v end})
+TracerBox:AddLabel("Tracer Color"):AddColorPicker("VTColor", {Default = VT.Color, Callback = function(v) VT.Color = v end})
+
+local NameBox = Tabs.Visuals:AddRightGroupbox("Billboards")
+NameBox:AddToggle("PNameToggle", {Text = "Show Names", Default = false, Callback = function(v) getgenv().pname.Enabled = v end})
+NameBox:AddToggle("PToolToggle", {Text = "Show Tools", Default = false, Callback = function(v) getgenv().ptool.Enabled = v end})
 
 local MobileGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local OpenBtn = Instance.new("TextButton", MobileGui)
 Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-local Stroke = Instance.new("UIStroke", OpenBtn)
-
-OpenBtn.Name = "SeizureToggle"
 OpenBtn.Size = UDim2.new(0, 45, 0, 45)
 OpenBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 OpenBtn.Text = "K"
 OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
-OpenBtn.Font = Enum.Font.GothamBold
-OpenBtn.TextSize = 20
+OpenBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 OpenBtn.ZIndex = 1000
-Stroke.Thickness = 2
-Stroke.Color = Color3.fromRGB(255, 0, 0)
+OpenBtn.MouseButton1Click:Connect(function() Library:Toggle() end)
 
-local function MakeMobileDraggable(obj)
-    local Dragging, DragInput, DragStart, StartPos
-    obj.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = obj.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then Dragging = false end
-            end)
-        end
-    end)
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local Delta = input.Position - DragStart
-            obj.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-        end
-    end)
-end
-MakeMobileDraggable(OpenBtn)
-
-OpenBtn.MouseButton1Click:Connect(function()
-    Library:Toggle()
-end)
-
-local TargetingGroup = Tabs.Main:AddLeftGroupbox("Targeting")
-
-TargetingGroup:AddToggle("StickyAim", {
-    Text = "Sticky Aim",
-    Default = false,
-    Callback = function(Value)
-        StickyAimEnabled = Value
-        if not Value then 
-            lockedTarget = nil 
-            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-        end
-    end
-})
-
-TargetingGroup:AddDropdown("HitPart", {
-    Text = "Hit Part",
-    Values = {"Head", "HumanoidRootPart", "UpperTorso", "Left Arm", "Right Arm"},
-    Default = "Head",
-    Callback = function(Value)
-        targetHitPart = Value
-    end
-})
-
-local TargetControl = Tabs.Main:AddLeftGroupbox("Target Control")
-
-TargetControl:AddToggle("SpectateToggle", {
-    Text = "Enable Spectate",
-    Default = false,
-    Callback = function(Value)
-        maddieplsnomad = Value
-        if not Value then 
-            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-        end
-    end
-})
-
-TargetControl:AddToggle("StrafeToggle", {
-    Text = "Target Strafe",
-    Default = false,
-    Callback = function(Value)
-        strafeEnabled = Value
-    end
-})
-
-local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu")
-MenuGroup:AddButton("Unload", function() Library:Unload() MobileGui:Destroy() end)
-MenuGroup:AddLabel("Menu Bind"):AddKeyPicker("MenuKeybind", { Default = "LeftAlt", NoUI = true, Text = "Menu keybind" })
-
-Library:Notify("Script da fix loi hien thi to tren Mobile!")
+Library:Notify("Azured.gg")
