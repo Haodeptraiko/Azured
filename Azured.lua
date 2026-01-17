@@ -1,120 +1,263 @@
-local repo = "https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/"
-local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
-local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
-
-Library.ScreenGui.IgnoreGuiInset = true
-
-local Window = Library:CreateWindow({ 
-    Title = "$ Seizure.gg | Mobile Fix Tab", 
-    Center = true, 
-    AutoShow = true, 
-    TabPadding = 1, 
-    MenuFadeTime = 0.2 
-})
-
-local Tabs = { 
-    Main = Window:AddTab("Main"), 
-    Visuals = Window:AddTab("Visuals"), 
-    Misc = Window:AddTab("Misc"), 
-    ["UI Settings"] = Window:AddTab("UI Settings") 
-}
-
-getgenv().ESP = { Enabled = false, Color = Color3.fromRGB(255, 255, 255), Rainbow = false, Boxes = false, Names = false, Tracers = false, Objects = setmetatable({}, {__mode = "kv"}) }
-getgenv().hbar = { enabled = false, barThickness = 3, greenThickness = 1.5, barColor = Color3.fromRGB(0, 0, 0), greenColor = Color3.fromRGB(0, 255, 0) }
-getgenv().pname = { Color = Color3.fromRGB(255, 255, 255), Enabled = false, Position = "Above", Size = 10 }
-getgenv().ptool = { Color = Color3.fromRGB(255, 255, 255), Enabled = false, Position = "Above", Size = 10 }
-getgenv().viewtracer = { Enabled = false, Color = Color3.fromRGB(255, 203, 138), Thickness = 1, Transparency = 1, AutoThickness = true, Length = 15, Smoothness = 0.2 }
-
-local LocalPlayer = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local VT = getgenv().viewtracer
 
-local function CreateGlobalVisuals(plr)
-    local lineVT = Drawing.new("Line")
-    lineVT.Visible = false
-    
-    local lineHBBg = Drawing.new("Line")
-    lineHBBg.Visible = false
-    
-    local lineHBMain = Drawing.new("Line")
-    lineHBMain.Visible = false
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Azured_Mobile_Optimized"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
 
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if not plr or not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") or plr.Character.Humanoid.Health <= 0 then
-            lineVT.Visible = false
-            lineHBBg.Visible = false
-            lineHBMain.Visible = false
-            return
+local IntroLabel = Instance.new("TextLabel")
+IntroLabel.Parent = ScreenGui
+IntroLabel.Size = UDim2.new(1, 0, 0, 50)
+IntroLabel.Position = UDim2.new(0, 0, 0.2, 0)
+IntroLabel.BackgroundTransparency = 1
+IntroLabel.Text = "Azured"
+IntroLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntroLabel.Font = Enum.Font.GothamBold
+IntroLabel.TextSize = 25
+IntroLabel.TextTransparency = 1
+local IntroStroke = Instance.new("UIStroke", IntroLabel)
+IntroStroke.Thickness = 2
+IntroStroke.Color = Color3.fromRGB(0, 255, 0)
+IntroStroke.Transparency = 1
+
+task.spawn(function()
+    local TweenService = game:GetService("TweenService")
+    local Info = TweenInfo.new(1, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+    TweenService:Create(IntroLabel, Info, {TextTransparency = 0, Position = UDim2.new(0, 0, 0.25, 0)}):Play()
+    TweenService:Create(IntroStroke, Info, {Transparency = 0}):Play()
+    task.wait(3)
+    TweenService:Create(IntroLabel, Info, {TextTransparency = 1, Position = UDim2.new(0, 0, 0.2, 0)}):Play()
+    TweenService:Create(IntroStroke, Info, {Transparency = 1}):Play()
+    task.wait(1)
+    IntroLabel:Destroy()
+end)
+
+local function MakeDraggable(obj)
+    local Dragging, DragInput, DragStart, StartPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = input.Position
+            StartPos = obj.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then Dragging = false end
+            end)
         end
-
-        local char = plr.Character
-        local root = char.HumanoidRootPart
-        local head = char:FindFirstChild("Head")
-        if not head then return end
-
-        local rootPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-        local headPos = Camera:WorldToViewportPoint(head.Position)
-
-        if onScreen then
-            if VT.Enabled then
-                local offsetCFrame = CFrame.new(0, 0, -VT.Length)
-                local targetWorldPos = head.CFrame:ToWorldSpace(offsetCFrame).Position
-                local targetScreenPos, targetVis = Camera:WorldToViewportPoint(targetWorldPos)
-                if targetVis then
-                    lineVT.From = Vector2.new(headPos.X, headPos.Y)
-                    lineVT.To = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
-                    lineVT.Color = VT.Color
-                    lineVT.Thickness = VT.AutoThickness and math.clamp(1/(LocalPlayer.Character.HumanoidRootPart.Position - head.Position).magnitude*100, 0.1, 3) or VT.Thickness
-                    lineVT.Visible = true
-                else lineVT.Visible = false end
-            else lineVT.Visible = false end
-
-            if getgenv().hbar.enabled then
-                local distY = math.clamp((Vector2.new(headPos.X, headPos.Y) - Vector2.new(rootPos.X, rootPos.Y)).magnitude, 2, math.huge)
-                local hRatio = char.Humanoid.Health / char.Humanoid.MaxHealth
-                lineHBBg.Visible = true
-                lineHBBg.From = Vector2.new(rootPos.X - distY - 4, rootPos.Y + distY*2)
-                lineHBBg.To = Vector2.new(rootPos.X - distY - 4, rootPos.Y - distY*2)
-                lineHBBg.Color = getgenv().hbar.barColor
-                lineHBBg.Thickness = getgenv().hbar.barThickness
-
-                lineHBMain.Visible = true
-                lineHBMain.From = Vector2.new(rootPos.X - distY - 4, rootPos.Y + distY*2)
-                lineHBMain.To = Vector2.new(rootPos.X - distY - 4, rootPos.Y + distY*2 - (hRatio * (distY*4)))
-                lineHBMain.Color = Color3.fromRGB(255, 0, 0):lerp(getgenv().hbar.greenColor, hRatio)
-                lineHBMain.Thickness = getgenv().hbar.greenThickness
-            else lineHBBg.Visible = false lineHBMain.Visible = false end
-        else
-            lineVT.Visible = false
-            lineHBBg.Visible = false
-            lineHBMain.Visible = false
+    end)
+    obj.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == DragInput and Dragging then
+            local Delta = input.Position - DragStart
+            obj.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
         end
     end)
 end
 
-for _, p in next, game:GetService("Players"):GetPlayers() do if p ~= LocalPlayer then CreateGlobalVisuals(p) end end
-game:GetService("Players").PlayerAdded:Connect(function(p) CreateGlobalVisuals(p) end)
+local function ApplyWhiteAura(char)
+    if not char then return end
+    for _, v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") or v:IsA("MeshPart") then
+            v.Material = Enum.Material.ForceField
+            v.Color = Color3.fromRGB(255, 255, 255)
+        end
+    end
+end
+LocalPlayer.CharacterAdded:Connect(function(char) task.wait(0.5) ApplyWhiteAura(char) end)
+if LocalPlayer.Character then ApplyWhiteAura(LocalPlayer.Character) end
 
-local MainBox = Tabs.Main:AddLeftGroupbox("Targeting")
-MainBox:AddToggle("StickyAim", { Text = "Sticky Aim", Default = false })
+local function CreateRoundBtn(text, pos, color)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = ScreenGui
+    Btn.Size = UDim2.new(0, 65, 0, 65)
+    Btn.Position = pos
+    Btn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Btn.Text = text
+    Btn.TextColor3 = color
+    Btn.Font = Enum.Font.GothamBold
+    Btn.TextSize = 11
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
+    local Stroke = Instance.new("UIStroke", Btn)
+    Stroke.Thickness = 3
+    Stroke.Color = color
+    MakeDraggable(Btn)
+    return Btn, Stroke
+end
 
-local VisualBox = Tabs.Visuals:AddLeftGroupbox("ESP Settings")
-VisualBox:AddToggle("HBarToggle", {Text = "Health Bar", Default = false, Callback = function(v) getgenv().hbar.enabled = v end})
-VisualBox:AddToggle("VTToggle", {Text = "View Tracer", Default = false, Callback = function(v) VT.Enabled = v end})
+local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.4, 0), Color3.fromRGB(0, 255, 0))
 
-local BillboardBox = Tabs.Visuals:AddRightGroupbox("Billboards")
-BillboardBox:AddToggle("PNameToggle", {Text = "Show Names", Default = false, Callback = function(v) getgenv().pname.Enabled = v end})
-BillboardBox:AddToggle("PToolToggle", {Text = "Show Tools", Default = false, Callback = function(v) getgenv().ptool.Enabled = v end})
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 110, 0, 185)
+MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BackgroundTransparency = 0.3
+Instance.new("UICorner", MainFrame)
+MakeDraggable(MainFrame)
 
-local MobileGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-local OpenBtn = Instance.new("TextButton", MobileGui)
-OpenBtn.Size = UDim2.new(0, 45, 0, 45)
-OpenBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
-OpenBtn.Text = "K"
-OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-OpenBtn.ZIndex = 10000
-OpenBtn.MouseButton1Click:Connect(function() Library:Toggle() end)
+local MiniBtn = Instance.new("TextButton")
+MiniBtn.Parent = MainFrame
+MiniBtn.Size = UDim2.new(0, 20, 0, 20)
+MiniBtn.Position = UDim2.new(1, -25, 0, 5)
+MiniBtn.Text = "-"
+MiniBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", MiniBtn)
 
-Library:Notify("Fix loi bam tab va ghep code thanh cong!")
+local Content = Instance.new("Frame")
+Content.Parent = MainFrame
+Content.Size = UDim2.new(1, 0, 1, -30)
+Content.Position = UDim2.new(0, 0, 0, 30)
+Content.BackgroundTransparency = 1
+
+MiniBtn.MouseButton1Click:Connect(function()
+    Content.Visible = not Content.Visible
+    if Content.Visible then
+        MainFrame.Size = UDim2.new(0, 110, 0, 185)
+        MiniBtn.Text = "-"
+    else
+        MainFrame.Size = UDim2.new(0, 110, 0, 30)
+        MiniBtn.Text = "+"
+    end
+end)
+
+local function CreateMenuBtn(name, pos)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = Content
+    Btn.Size = UDim2.new(1, -10, 0, 30)
+    Btn.Position = pos
+    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Btn.Text = name
+    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Btn.Font = Enum.Font.Gotham
+    Btn.TextSize = 10
+    Instance.new("UICorner", Btn)
+    return Btn
+end
+
+local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 0))
+local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 35))
+local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 70))
+local EspBtn = CreateMenuBtn("ESP ALL", UDim2.new(0, 5, 0, 105))
+
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn = nil, false, false, false, false, false
+local Degree = 0
+
+LockBtn.MouseButton1Click:Connect(function()
+    StrafeOn = not StrafeOn
+    if StrafeOn then
+        local Target, MinDist = nil, math.huge
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local Dist = (v.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Magnitude
+                if Dist < MinDist then MinDist = Dist; Target = v end
+            end
+        end
+        if Target then 
+            LockedPlayer = Target
+            LockStroke.Color = Color3.fromRGB(255, 255, 255)
+            Camera.CameraType = Enum.CameraType.Scriptable
+        else StrafeOn = false end
+    else
+        LockedPlayer = nil
+        LockStroke.Color = Color3.fromRGB(0, 255, 0)
+        Camera.CameraType = Enum.CameraType.Custom
+    end
+end)
+
+SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn; SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn; HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+
+local DrawingLines = {}
+
+RunService.RenderStepped:Connect(function()
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
+
+    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local TRoot = LockedPlayer.Character.HumanoidRootPart
+        Degree = Degree + 0.05
+        local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
+        Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
+        Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
+    end
+
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+            local pChar = v.Character
+            local pHead = pChar.Head
+            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+            
+            if EspOn and pRoot then
+                local Pos, OnScreen = Camera:WorldToViewportPoint(pHead.Position)
+                
+                local Line = DrawingLines[v.Name] or Drawing.new("Line")
+                Line.Transparency = 1
+                Line.Thickness = 1.5
+                Line.Color = Color3.fromRGB(255, 203, 138)
+                DrawingLines[v.Name] = Line
+                
+                if OnScreen then
+                    local Dir = pHead.CFrame * CFrame.new(0, 0, -10)
+                    local DirPos, DirVis = Camera:WorldToViewportPoint(Dir.Position)
+                    Line.From = Vector2.new(Pos.X, Pos.Y)
+                    Line.To = Vector2.new(DirPos.X, DirPos.Y)
+                    Line.Visible = true
+                else Line.Visible = false end
+
+                local Tag = pRoot:FindFirstChild("EspTag")
+                if not Tag then
+                    Tag = Instance.new("BillboardGui", pRoot)
+                    Tag.Name = "EspTag"
+                    Tag.Size = UDim2.new(4, 0, 2, 0)
+                    Tag.AlwaysOnTop = true
+                    Tag.ExtentsOffset = Vector3.new(0, 3, 0)
+                    local L = Instance.new("TextLabel", Tag)
+                    L.Size = UDim2.new(1, 0, 1, 0)
+                    L.BackgroundTransparency = 1
+                    L.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    L.TextSize = 12
+                    L.Font = Enum.Font.GothamBold
+                    L.TextStrokeTransparency = 0
+                end
+                
+                local Tool = pChar:FindFirstChildOfClass("Tool")
+                local ToolName = Tool and Tool.Name or "None"
+                local HP = math.floor(pChar.Humanoid.Health)
+                Tag.TextLabel.Text = v.Name .. " [" .. ToolName .. "]\nHP: " .. HP
+                Tag.TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
+            else
+                if DrawingLines[v.Name] then DrawingLines[v.Name].Visible = false end
+                local Tag = pRoot and pRoot:FindFirstChild("EspTag")
+                if Tag then Tag:Destroy() end
+            end
+
+            if HitOn and pRoot then
+                pRoot.Size = Vector3.new(30, 30, 30)
+                pRoot.Transparency = 0.7
+                pRoot.CanCollide = false
+            elseif pRoot then
+                pRoot.Size = Vector3.new(2, 2, 1)
+                pRoot.Transparency = 1
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(v)
+    if DrawingLines[v.Name] then DrawingLines[v.Name]:Remove() DrawingLines[v.Name] = nil end
+end)
+
+Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
+Notify("Welcome, " .. LocalPlayer.Name, Color3.fromRGB(255, 255, 255))
