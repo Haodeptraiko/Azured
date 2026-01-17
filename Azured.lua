@@ -6,33 +6,51 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 Library.ScreenGui.IgnoreGuiInset = true
 
 local Window = Library:CreateWindow({
-    Title = "AURA | MOBILE COMPACT",
+    Title = "                     $ Seizure.gg | Mobile Fix                   ",
     Center = true,
     AutoShow = true,
-    TabPadding = 2,
-    MenuFadeTime = 0.1
+    TabPadding = 4,
+    MenuFadeTime = 0.2
 })
 
-local MainHolder = Window.Holder
-MainHolder.Size = UDim2.new(0.5, 0, 0.5, 0)
-MainHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+Window.Holder.Size = UDim2.new(0, 450, 0, 300)
+
+local Tabs = {
+    Main = Window:AddTab("Main"),
+    Character = Window:AddTab("Character"),
+    Visuals = Window:AddTab("Visuals"),
+    Misc = Window:AddTab("Misc"),
+    Players = Window:AddTab("Players"),
+    ["UI Settings"] = Window:AddTab("UI Settings")
+}
+
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local lockedTarget = nil
+local StickyAimEnabled = false
+local ViewTargetEnabled = false
+local targetHitPart = "Head"
+local strafeEnabled = false
+local maddieplsnomad = false
 
 local MobileGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
 local OpenBtn = Instance.new("TextButton", MobileGui)
 Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
 local Stroke = Instance.new("UIStroke", OpenBtn)
 
-OpenBtn.Name = "MobileToggle"
-OpenBtn.Size = UDim2.new(0, 40, 0, 40)
-OpenBtn.Position = UDim2.new(0.12, 0, 0.12, 0)
+OpenBtn.Name = "SeizureToggle"
+OpenBtn.Size = UDim2.new(0, 45, 0, 45)
+OpenBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
 OpenBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 OpenBtn.Text = "K"
 OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 0)
 OpenBtn.Font = Enum.Font.GothamBold
-OpenBtn.TextSize = 16
+OpenBtn.TextSize = 20
 OpenBtn.ZIndex = 1000
-Stroke.Thickness = 1.5
+Stroke.Thickness = 2
 Stroke.Color = Color3.fromRGB(255, 0, 0)
 
 local function MakeMobileDraggable(obj)
@@ -60,15 +78,52 @@ OpenBtn.MouseButton1Click:Connect(function()
     Library:Toggle()
 end)
 
-local Tabs = {
-    Combat = Window:AddTab("Combat"),
-    Settings = Window:AddTab("Settings")
-}
+local TargetingGroup = Tabs.Main:AddLeftGroupbox("Targeting")
 
-local MainBox = Tabs.Combat:AddLeftGroupbox("Main")
-MainBox:AddToggle("SAim", { Text = "Silent Aim", Default = false, Callback = function(v) getgenv().SA = v end })
+TargetingGroup:AddToggle("StickyAim", {
+    Text = "Sticky Aim",
+    Default = false,
+    Callback = function(Value)
+        StickyAimEnabled = Value
+        if not Value then 
+            lockedTarget = nil 
+            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+        end
+    end
+})
 
-local MenuBox = Tabs.Settings:AddLeftGroupbox("Menu")
-MenuBox:AddButton("Unload", function() Library:Unload() MobileGui:Destroy() end)
+TargetingGroup:AddDropdown("HitPart", {
+    Text = "Hit Part",
+    Values = {"Head", "HumanoidRootPart", "UpperTorso", "Left Arm", "Right Arm"},
+    Default = "Head",
+    Callback = function(Value)
+        targetHitPart = Value
+    end
+})
 
-Library:Notify("Menu da duoc thu nho 50% de phu hop Mobile!")
+local TargetControl = Tabs.Main:AddLeftGroupbox("Target Control")
+
+TargetControl:AddToggle("SpectateToggle", {
+    Text = "Enable Spectate",
+    Default = false,
+    Callback = function(Value)
+        maddieplsnomad = Value
+        if not Value then 
+            workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+        end
+    end
+})
+
+TargetControl:AddToggle("StrafeToggle", {
+    Text = "Target Strafe",
+    Default = false,
+    Callback = function(Value)
+        strafeEnabled = Value
+    end
+})
+
+local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu")
+MenuGroup:AddButton("Unload", function() Library:Unload() MobileGui:Destroy() end)
+MenuGroup:AddLabel("Menu Bind"):AddKeyPicker("MenuKeybind", { Default = "LeftAlt", NoUI = true, Text = "Menu keybind" })
+
+Library:Notify("Script da fix loi hien thi to tren Mobile!")
