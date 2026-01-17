@@ -2,14 +2,18 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
 local FovSize = 300
 local StompRange = 40
+local AttackDistance = 75
+local SelectedGun = "rifle"
+
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_V19"
+ScreenGui.Name = "Azured_Mobile_V21"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -79,23 +83,27 @@ local function CreateRoundBtn(text, pos, color)
     return Btn, S
 end
 
-local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.85, 0, 0.4, 0), Color3.fromRGB(0, 255, 0))
+local function CreateLongBtn(text, pos)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = ScreenGui
+    Btn.Size = UDim2.new(0, 120, 0, 40)
+    Btn.Position = pos
+    Btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Btn.Text = text .. ": OFF"
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.GothamBold
+    Btn.TextSize = 12
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
+    local S = Instance.new("UIStroke", Btn)
+    S.Thickness = 2
+    S.Color = Color3.fromRGB(50, 50, 50)
+    MakeDraggable(Btn)
+    return Btn, S
+end
 
--- Nut Auto Stomp moi theo yeu cau
-local StompBtn = Instance.new("TextButton")
-StompBtn.Parent = ScreenGui
-StompBtn.Size = UDim2.new(0, 120, 0, 40) -- Dai vua phai
-StompBtn.Position = UDim2.new(0.85, -30, 0.52, 0)
-StompBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Mau den
-StompBtn.Text = "AUTO STOMP: OFF" -- Trang thai ban dau
-StompBtn.TextColor3 = Color3.fromRGB(255, 255, 255) -- Chu trang
-StompBtn.Font = Enum.Font.GothamBold
-StompBtn.TextSize = 12
-Instance.new("UICorner", StompBtn).CornerRadius = UDim.new(0, 8)
-local StompStroke = Instance.new("UIStroke", StompBtn)
-StompStroke.Thickness = 2
-StompStroke.Color = Color3.fromRGB(50, 50, 50)
-MakeDraggable(StompBtn)
+local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.85, 0, 0.3, 0), Color3.fromRGB(0, 255, 0))
+local StompBtn, StompStroke = CreateLongBtn("AUTO STOMP", UDim2.new(0.85, -30, 0.42, 0))
+local GKillBtn, GKillStroke = CreateLongBtn("GKILL", UDim2.new(0.85, -30, 0.5, 0))
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
@@ -132,8 +140,12 @@ local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 75))
 local EspBtn = CreateMenuBtn("ESP", UDim2.new(0, 5, 0, 110))
 
 local HitSize = 15
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, StompOn = nil, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, StompOn, GKillOn = nil, false, false, false, false, false, false, false
 local LastStrafe = 0
+
+local ShootEvent = ReplicatedStorage:FindFirstChild("Shoot") or ReplicatedStorage:FindFirstChild("ShootEvent")
+local PunchEvent = ReplicatedStorage:FindFirstChild("Punch") or ReplicatedStorage:FindFirstChild("PunchEvent")
+local MainEvent = ReplicatedStorage:FindFirstChild("MainEvent")
 
 local function GetTarget()
     local Target, MinDist = nil, FovSize / 2
@@ -164,13 +176,14 @@ end)
 
 StompBtn.MouseButton1Click:Connect(function()
     StompOn = not StompOn
-    if StompOn then
-        StompBtn.Text = "AUTO STOMP: ON"
-        StompStroke.Color = Color3.fromRGB(255, 255, 255)
-    else
-        StompBtn.Text = "AUTO STOMP: OFF"
-        StompStroke.Color = Color3.fromRGB(50, 50, 50)
-    end
+    StompBtn.Text = StompOn and "AUTO STOMP: ON" or "AUTO STOMP: OFF"
+    StompStroke.Color = StompOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(50, 50, 50)
+end)
+
+GKillBtn.MouseButton1Click:Connect(function()
+    GKillOn = not GKillOn
+    GKillBtn.Text = GKillOn and "GKILL: ON" or "GKILL: OFF"
+    GKillStroke.Color = GKillOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(50, 50, 50)
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
@@ -179,8 +192,7 @@ HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.TextC
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
 local mt = getrawmetatable(game)
-local oldIndex = mt.__index
-local oldNamecall = mt.__namecall
+local oldIndex, oldNamecall = mt.__index, mt.__namecall
 setreadonly(mt, false)
 mt.__index = newcclosure(function(t, k)
     if t == Mouse and (k == "Hit" or k == "Target") then
@@ -222,16 +234,19 @@ RunService.RenderStepped:Connect(function()
         Camera.CFrame = CFrame.new(Root.Position + Vector3.new(0, 2, 0), TRoot.Position)
     end
     
-    if StompOn then
+    if StompOn or GKillOn then
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                 local eRoot = v.Character.HumanoidRootPart
                 local eHum = v.Character:FindFirstChild("Humanoid")
                 local Distance = (Root.Position - eRoot.Position).Magnitude
+                
                 if eHum and eHum.Health <= 15 and Distance <= StompRange then
                     Root.CFrame = eRoot.CFrame * CFrame.new(0, 2, 0)
-                    game:GetService("ReplicatedStorage").MainEvent:FireServer("Stomp")
+                    if PunchEvent then PunchEvent:FireServer(v.Character) elseif MainEvent then MainEvent:FireServer("Stomp") end
                     break
+                elseif GKillOn and eHum and eHum.Health > 15 and Distance <= AttackDistance then
+                    if ShootEvent then ShootEvent:FireServer(v.Character, SelectedGun) elseif MainEvent then MainEvent:FireServer("Shoot", eRoot.Position) end
                 end
             end
         end
