@@ -5,9 +5,29 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_Optimized"
+ScreenGui.Name = "Azured_Mobile_Final"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local function Notify(text, color)
+    local NotifyLabel = Instance.new("TextLabel")
+    NotifyLabel.Parent = ScreenGui
+    NotifyLabel.Size = UDim2.new(1, 0, 0, 30)
+    NotifyLabel.Position = UDim2.new(0, 0, 0.1, 0)
+    NotifyLabel.BackgroundTransparency = 1
+    NotifyLabel.Text = text
+    NotifyLabel.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+    NotifyLabel.Font = Enum.Font.GothamBold
+    NotifyLabel.TextSize = 18
+    local Stroke = Instance.new("UIStroke", NotifyLabel)
+    Stroke.Thickness = 2
+    game:GetService("TweenService"):Create(NotifyLabel, TweenInfo.new(0.5), {Position = UDim2.new(0, 0, 0.15, 0)}):Play()
+    task.delay(2, function()
+        game:GetService("TweenService"):Create(NotifyLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        task.wait(0.5)
+        NotifyLabel:Destroy()
+    end)
+end
 
 local IntroLabel = Instance.new("TextLabel")
 IntroLabel.Parent = ScreenGui
@@ -175,8 +195,6 @@ FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn; HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
-local DrawingLines = {}
-
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
@@ -184,7 +202,7 @@ RunService.RenderStepped:Connect(function()
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
-        Degree = Degree + 0.05
+        Degree = Degree + 1.5
         local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
         Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
         Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
@@ -194,28 +212,12 @@ RunService.RenderStepped:Connect(function()
     if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
 
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+        if v ~= LocalPlayer and v.Character then
             local pChar = v.Character
-            local pHead = pChar.Head
             local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+            local pHum = pChar:FindFirstChild("Humanoid")
             
-            if EspOn and pRoot then
-                local Pos, OnScreen = Camera:WorldToViewportPoint(pHead.Position)
-                
-                local Line = DrawingLines[v.Name] or Drawing.new("Line")
-                Line.Transparency = 1
-                Line.Thickness = 1.5
-                Line.Color = Color3.fromRGB(255, 203, 138)
-                DrawingLines[v.Name] = Line
-                
-                if OnScreen then
-                    local Dir = pHead.CFrame * CFrame.new(0, 0, -10)
-                    local DirPos, DirVis = Camera:WorldToViewportPoint(Dir.Position)
-                    Line.From = Vector2.new(Pos.X, Pos.Y)
-                    Line.To = Vector2.new(DirPos.X, DirPos.Y)
-                    Line.Visible = true
-                else Line.Visible = false end
-
+            if EspOn and pRoot and pHum then
                 local Tag = pRoot:FindFirstChild("EspTag")
                 if not Tag then
                     Tag = Instance.new("BillboardGui", pRoot)
@@ -229,16 +231,15 @@ RunService.RenderStepped:Connect(function()
                     L.TextColor3 = Color3.fromRGB(255, 255, 255)
                     L.TextSize = 12
                     L.Font = Enum.Font.GothamBold
-                    L.TextStrokeTransparency = 0
+                    L.Name = "TextLabel"
                 end
                 
                 local Tool = pChar:FindFirstChildOfClass("Tool")
                 local ToolName = Tool and Tool.Name or "None"
-                local HP = math.floor(pChar.Humanoid.Health)
+                local HP = math.floor(pHum.Health)
                 Tag.TextLabel.Text = v.Name .. " [" .. ToolName .. "]\nHP: " .. HP
                 Tag.TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
             else
-                if DrawingLines[v.Name] then DrawingLines[v.Name].Visible = false end
                 local Tag = pRoot and pRoot:FindFirstChild("EspTag")
                 if Tag then Tag:Destroy() end
             end
@@ -255,9 +256,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Players.PlayerRemoving:Connect(function(v)
-    if DrawingLines[v.Name] then DrawingLines[v.Name]:Remove() DrawingLines[v.Name] = nil end
+task.delay(1, function()
+    Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
 end)
-
-Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
-Notify("Welcome, " .. LocalPlayer.Name, Color3.fromRGB(255, 255, 255))
