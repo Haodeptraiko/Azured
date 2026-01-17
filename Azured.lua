@@ -4,8 +4,11 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+getgenv().selectedHitsound = "rbxassetid://6607142036"
+getgenv().hitsoundEnabled = true
+
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_Final"
+ScreenGui.Name = "Azured_Mobile_Final_V3"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -29,6 +32,29 @@ local function Notify(text, color)
     end)
 end
 
+local function playHitsound()
+    if getgenv().hitsoundEnabled then
+        local sound = Instance.new("Sound")
+        sound.SoundId = getgenv().selectedHitsound
+        sound.Volume = 3
+        sound.Parent = game:GetService("SoundService")
+        sound:Play()
+        sound.Ended:Connect(function() sound:Destroy() end)
+    end
+end
+
+local lastHealth = {}
+local function trackHealth()
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
+            local hum = v.Character.Humanoid
+            if not lastHealth[v.Name] then lastHealth[v.Name] = hum.Health end
+            if hum.Health < lastHealth[v.Name] then playHitsound() end
+            lastHealth[v.Name] = hum.Health
+        end
+    end
+end
+
 local function ApplyAura(char)
     task.wait(0.5)
     for _, v in pairs(char:GetDescendants()) do
@@ -38,7 +64,6 @@ local function ApplyAura(char)
         end
     end
 end
-
 LocalPlayer.CharacterAdded:Connect(ApplyAura)
 if LocalPlayer.Character then ApplyAura(LocalPlayer.Character) end
 
@@ -46,17 +71,11 @@ local function MakeDraggable(obj)
     local Dragging, DragInput, DragStart, StartPos
     obj.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = obj.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then Dragging = false end
-            end)
+            Dragging = true DragStart = input.Position StartPos = obj.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then Dragging = false end end)
         end
     end)
-    obj.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end
-    end)
+    obj.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end end)
     UserInputService.InputChanged:Connect(function(input)
         if input == DragInput and Dragging then
             local Delta = input.Position - DragStart
@@ -87,7 +106,7 @@ local LockBtn, LockStroke = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.4, 0), Co
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 110, 0, 185)
+MainFrame.Size = UDim2.new(0, 110, 0, 255)
 MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BackgroundTransparency = 0.3
@@ -111,13 +130,8 @@ Content.BackgroundTransparency = 1
 
 MiniBtn.MouseButton1Click:Connect(function()
     Content.Visible = not Content.Visible
-    if Content.Visible then
-        MainFrame.Size = UDim2.new(0, 110, 0, 185)
-        MiniBtn.Text = "-"
-    else
-        MainFrame.Size = UDim2.new(0, 110, 0, 30)
-        MiniBtn.Text = "+"
-    end
+    MainFrame.Size = Content.Visible and UDim2.new(0, 110, 0, 255) or UDim2.new(0, 110, 0, 30)
+    MiniBtn.Text = Content.Visible and "-" or "+"
 end)
 
 local function CreateMenuBtn(name, pos)
@@ -138,6 +152,8 @@ local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 0))
 local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 35))
 local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 70))
 local EspBtn = CreateMenuBtn("ESP", UDim2.new(0, 5, 0, 105))
+local AntiBtn = CreateMenuBtn("ANTI", UDim2.new(0, 5, 0, 140))
+local SoundBtn = CreateMenuBtn("SOUND: ON", UDim2.new(0, 5, 0, 175))
 
 local SliderFrame = Instance.new("Frame")
 SliderFrame.Parent = ScreenGui
@@ -169,8 +185,9 @@ SliderVal.BackgroundTransparency = 1
 SliderVal.Font = Enum.Font.GothamBold
 
 local HitSize = 15
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn = nil, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, AntiOn = nil, false, false, false, false, false, false
 local Degree = 0
+local AntiVelocity = -0.27
 
 local function UpdateHitbox(input)
     local Pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
@@ -182,41 +199,17 @@ end
 HitboxBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         local Hold = true
-        local Connection = input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then Hold = false end
-        end)
+        local Connection = input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then Hold = false end end)
         task.wait(0.5)
         if Hold then
             SliderFrame.Visible = true
-            local MoveConn = UserInputService.InputChanged:Connect(function(move)
-                if move.UserInputType == Enum.UserInputType.Touch or move.UserInputType == Enum.UserInputType.MouseMovement then
-                    UpdateHitbox(move)
-                end
-            end)
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    MoveConn:Disconnect()
-                    task.wait(1)
-                    SliderFrame.Visible = false
-                end
-            end)
+            local MoveConn = UserInputService.InputChanged:Connect(function(move) if move.UserInputType == Enum.UserInputType.Touch or move.UserInputType == Enum.UserInputType.MouseMovement then UpdateHitbox(move) end end)
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then MoveConn:Disconnect() task.wait(1) SliderFrame.Visible = false end end)
         else
             HitOn = not HitOn
             HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
         end
         Connection:Disconnect()
-    end
-end)
-
-task.spawn(function()
-    while true do
-        if StrafeOn and LockedPlayer then
-            local Tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-            if Tool then
-                Tool:Activate()
-            end
-        end
-        task.wait(0.1)
     end
 end)
 
@@ -233,27 +226,22 @@ LockBtn.MouseButton1Click:Connect(function()
                 end
             end
         end
-        if Target then 
-            LockedPlayer = Target
-            LockStroke.Color = Color3.fromRGB(255, 255, 255)
-            Camera.CameraType = Enum.CameraType.Scriptable
+        if Target then LockedPlayer = Target LockStroke.Color = Color3.fromRGB(255, 255, 255) Camera.CameraType = Enum.CameraType.Scriptable
         else StrafeOn = false end
-    else
-        LockedPlayer = nil
-        LockStroke.Color = Color3.fromRGB(0, 255, 0)
-        Camera.CameraType = Enum.CameraType.Custom
-    end
+    else LockedPlayer = nil LockStroke.Color = Color3.fromRGB(0, 255, 0) Camera.CameraType = Enum.CameraType.Custom end
 end)
 
-SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn; SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+AntiBtn.MouseButton1Click:Connect(function() AntiOn = not AntiOn AntiBtn.TextColor3 = AntiOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
+SoundBtn.MouseButton1Click:Connect(function() getgenv().hitsoundEnabled = not getgenv().hitsoundEnabled SoundBtn.Text = getgenv().hitsoundEnabled and "SOUND: ON" or "SOUND: OFF" SoundBtn.TextColor3 = getgenv().hitsoundEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-
+    trackHealth()
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         Degree = Degree + 1.5
@@ -261,49 +249,24 @@ RunService.RenderStepped:Connect(function()
         Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
         Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
     end
-
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
     if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
-
+    if AntiOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * AntiVelocity) end
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character then
-            local pChar = v.Character
-            local pRoot = pChar:FindFirstChild("HumanoidRootPart")
+            local pRoot = v.Character:FindFirstChild("HumanoidRootPart")
             if EspOn and pRoot then
-                local Tag = pRoot:FindFirstChild("EspTag")
-                if not Tag then
-                    Tag = Instance.new("BillboardGui", pRoot)
-                    Tag.Name = "EspTag"
-                    Tag.Size = UDim2.new(4, 0, 2, 0)
-                    Tag.AlwaysOnTop = true
-                    Tag.ExtentsOffset = Vector3.new(0, 3, 0)
-                    local L = Instance.new("TextLabel", Tag)
-                    L.Size = UDim2.new(1, 0, 1, 0)
-                    L.BackgroundTransparency = 1
-                    L.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    L.TextSize = 12
-                    L.Font = Enum.Font.GothamBold
-                    L.Name = "TextLabel"
-                end
-                local Tool = pChar:FindFirstChildOfClass("Tool")
-                local ToolName = Tool and Tool.Name or "None"
-                local HP = pChar:FindFirstChild("Humanoid") and math.floor(pChar.Humanoid.Health) or 0
-                Tag.TextLabel.Text = v.Name .. " [" .. ToolName .. "]\nHP: " .. HP
-                Tag.TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
-            else
-                local Tag = pRoot and pRoot:FindFirstChild("EspTag")
-                if Tag then Tag:Destroy() end
-            end
-            if HitOn and pRoot then
-                pRoot.Size = Vector3.new(HitSize, HitSize, HitSize)
-                pRoot.Transparency = 0.7
-                pRoot.CanCollide = false
-            elseif pRoot then
-                pRoot.Size = Vector3.new(2, 2, 1)
-                pRoot.Transparency = 1
-            end
+                local Tag = pRoot:FindFirstChild("EspTag") or Instance.new("BillboardGui", pRoot)
+                Tag.Name = "EspTag" Tag.Size = UDim2.new(4, 0, 2, 0) Tag.AlwaysOnTop = true
+                local L = Tag:FindFirstChild("TextLabel") or Instance.new("TextLabel", Tag)
+                L.Name = "TextLabel" L.Size = UDim2.new(1, 0, 1, 0) L.BackgroundTransparency = 1 L.TextSize = 12 L.Font = Enum.Font.GothamBold
+                local HP = v.Character.Humanoid and math.floor(v.Character.Humanoid.Health) or 0
+                L.Text = v.Name .. "\nHP: " .. HP L.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
+            elseif pRoot and pRoot:FindFirstChild("EspTag") then pRoot.EspTag:Destroy() end
+            if HitOn and pRoot then pRoot.Size = Vector3.new(HitSize, HitSize, HitSize) pRoot.Transparency = 0.7 pRoot.CanCollide = false
+            elseif pRoot then pRoot.Size = Vector3.new(2, 2, 1) pRoot.Transparency = 1 end
         end
     end
 end)
 
-Notify("Azured Mobile!", Color3.fromRGB(0, 255, 0))
+Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
