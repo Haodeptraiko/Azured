@@ -3,6 +3,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Aiming = loadstring(game:HttpGet("https://pastebin.com/raw/wy4vTkmn"))()
+Aiming.TeamCheck(false)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Azured_Mobile_Final"
@@ -194,9 +196,6 @@ SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn; SpeedBtn.Te
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn; HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-
-local Aiming = loadstring(game:HttpGet("https://pastebin.com/raw/wy4vTkmn"))()
-Aiming.TeamCheck(false)
 
 local DaHoodSettings = {
     SilentAim = true,
