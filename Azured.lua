@@ -195,6 +195,64 @@ FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn; HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
+local Aiming = loadstring(game:HttpGet("https://pastebin.com/raw/wy4vTkmn"))()
+Aiming.TeamCheck(false)
+
+local DaHoodSettings = {
+    SilentAim = true,
+    Prediction = 0.138
+}
+
+local function GetAimingCheck()
+    if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then
+        return false
+    end
+    local Character = Aiming.Character(Aiming.Selected)
+    local BodyEffects = Character:FindFirstChild("BodyEffects")
+    if BodyEffects then
+        local KOd = BodyEffects:FindFirstChild("K.O") and BodyEffects["K.O"].Value
+        local Grabbed = Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
+        if (KOd or Grabbed) then return false end
+    end
+    return true
+end
+
+local RawHook
+RawHook = hookmetamethod(game, "__index", function(self, key)
+    if self:IsA("Mouse") and (key == "Hit" or key == "Target") and GetAimingCheck() and StrafeOn then
+        if DaHoodSettings.SilentAim then
+            local Part = Aiming.SelectedPart
+            local Hit = Part.CFrame + (Part.Velocity * DaHoodSettings.Prediction)
+            return (key == "Hit" and Hit or Part)
+        end
+    end
+    return RawHook(self, key)
+end)
+
+LockBtn.MouseButton1Click:Connect(function()
+    StrafeOn = not StrafeOn
+    if StrafeOn then
+        Aiming.Enabled = true
+        local Target = GetClosestPlayer()
+        if Target then 
+            LockedPlayer = Target
+            LockStroke.Color = Color3.fromRGB(255, 255, 255)
+            Camera.CameraType = Enum.CameraType.Scriptable
+            Notify("Lock & Silent Aim: ON", Color3.fromRGB(0, 255, 0))
+        else 
+            StrafeOn = false 
+            Aiming.Enabled = false
+        end
+    else
+        LockedPlayer = nil
+        StrafeOn = false
+        Aiming.Enabled = false
+        LockStroke.Color = Color3.fromRGB(0, 255, 0)
+        Camera.CameraType = Enum.CameraType.Custom
+        Notify("Lock & Silent Aim: OFF", Color3.fromRGB(255, 0, 0))
+    end
+end)
+
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
