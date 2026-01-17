@@ -17,9 +17,10 @@ ScreenGui.ResetOnSpawn = false
 local FovCircle = Instance.new("Frame")
 FovCircle.Parent = ScreenGui
 FovCircle.Size = UDim2.new(0, 150, 0, 150)
+FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FovCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 FovCircle.BackgroundTransparency = 0.9
-FovCircle.Visible = false
+FovCircle.Visible = true
 local FovCorner = Instance.new("UICorner", FovCircle)
 FovCorner.CornerRadius = UDim.new(1, 0)
 local FovStroke = Instance.new("UIStroke", FovCircle)
@@ -245,7 +246,6 @@ LockBtn.MouseButton1Click:Connect(function()
             LockBtn.Text = "🔒"
             LockStroke.Color = Color3.fromRGB(255, 255, 255) 
             Camera.CameraType = Enum.CameraType.Scriptable
-            FovCircle.Visible = true
         else 
             StrafeOn = false 
         end
@@ -254,7 +254,6 @@ LockBtn.MouseButton1Click:Connect(function()
         LockBtn.Text = "🔓"
         LockStroke.Color = Color3.fromRGB(0, 255, 0) 
         Camera.CameraType = Enum.CameraType.Custom 
-        FovCircle.Visible = false
     end
 end)
 
@@ -264,25 +263,33 @@ EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 
 AntiBtn.MouseButton1Click:Connect(function() AntiOn = not AntiOn AntiBtn.TextColor3 = AntiOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 SoundBtn.MouseButton1Click:Connect(function() getgenv().hitsoundEnabled = not getgenv().hitsoundEnabled SoundBtn.Text = getgenv().hitsoundEnabled and "SOUND: ON" or "SOUND: OFF" SoundBtn.TextColor3 = getgenv().hitsoundEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
+local function GetClosestToMouse()
+    local Target, ClosestDist = nil, 75
+    local MousePos = UserInputService:GetMouseLocation()
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("LowerTorso") then
+            local ScreenPos, OnScreen = Camera:WorldToScreenPoint(v.Character.LowerTorso.Position)
+            if OnScreen then
+                local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
+                if Dist < ClosestDist then ClosestDist = Dist; Target = v end
+            end
+        end
+    end
+    return Target
+end
+
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
 setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
-    if method == "FireServer" and self.Name == "MainEvent" and LockedPlayer then
+    if method == "FireServer" and self.Name == "MainEvent" then
         if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
-            local TargetPart = LockedPlayer.Character:FindFirstChild("LowerTorso")
-            if TargetPart then
-                local ScreenPos, OnScreen = Camera:WorldToScreenPoint(TargetPart.Position)
-                if OnScreen then
-                    local MousePos = UserInputService:GetMouseLocation()
-                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
-                    if Dist <= 75 then
-                        args[2] = TargetPart.Position
-                        return oldNamecall(self, unpack(args))
-                    end
-                end
+            local Target = GetClosestToMouse()
+            if Target and Target.Character:FindFirstChild("LowerTorso") then
+                args[2] = Target.Character.LowerTorso.Position
+                return oldNamecall(self, unpack(args))
             end
         end
     end
@@ -295,19 +302,14 @@ RunService.RenderStepped:Connect(function()
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
     trackHealth()
+    local MousePos = UserInputService:GetMouseLocation()
+    FovCircle.Position = UDim2.new(0, MousePos.X, 0, MousePos.Y)
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
-        local TTorso = LockedPlayer.Character:FindFirstChild("LowerTorso")
         Degree = Degree + 1.5
         local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree) * 11, 5, math.cos(Degree) * 11)
         Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
         Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
-        if TTorso then
-            local ScreenPos, OnScreen = Camera:WorldToScreenPoint(TTorso.Position)
-            if OnScreen then
-                FovCircle.Position = UDim2.new(0, ScreenPos.X - 75, 0, ScreenPos.Y - 75)
-            end
-        end
     end
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
     if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
@@ -332,4 +334,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Notify("Azured.gg Loaded!", Color3.fromRGB(0, 255, 0))
+Notify("Azured V3 Fatality Loaded!", Color3.fromRGB(0, 255, 0))
