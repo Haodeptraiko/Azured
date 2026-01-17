@@ -3,8 +3,6 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Aiming = loadstring(game:HttpGet("https://pastebin.com/raw/wy4vTkmn"))()
-Aiming.TeamCheck(false)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Azured_Mobile_Final"
@@ -31,33 +29,6 @@ local function Notify(text, color)
     end)
 end
 
-local IntroLabel = Instance.new("TextLabel")
-IntroLabel.Parent = ScreenGui
-IntroLabel.Size = UDim2.new(1, 0, 0, 50)
-IntroLabel.Position = UDim2.new(0, 0, 0.2, 0)
-IntroLabel.BackgroundTransparency = 1
-IntroLabel.Text = "Azured"
-IntroLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-IntroLabel.Font = Enum.Font.GothamBold
-IntroLabel.TextSize = 25
-IntroLabel.TextTransparency = 1
-local IntroStroke = Instance.new("UIStroke", IntroLabel)
-IntroStroke.Thickness = 2
-IntroStroke.Color = Color3.fromRGB(0, 255, 0)
-IntroStroke.Transparency = 1
-
-task.spawn(function()
-    local TweenService = game:GetService("TweenService")
-    local Info = TweenInfo.new(1, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-    TweenService:Create(IntroLabel, Info, {TextTransparency = 0, Position = UDim2.new(0, 0, 0.25, 0)}):Play()
-    TweenService:Create(IntroStroke, Info, {Transparency = 0}):Play()
-    task.wait(3)
-    TweenService:Create(IntroLabel, Info, {TextTransparency = 1, Position = UDim2.new(0, 0, 0.2, 0)}):Play()
-    TweenService:Create(IntroStroke, Info, {Transparency = 1}):Play()
-    task.wait(1)
-    IntroLabel:Destroy()
-end)
-
 local function MakeDraggable(obj)
     local Dragging, DragInput, DragStart, StartPos
     obj.InputBegan:Connect(function(input)
@@ -80,18 +51,6 @@ local function MakeDraggable(obj)
         end
     end)
 end
-
-local function ApplyWhiteAura(char)
-    if not char then return end
-    for _, v in pairs(char:GetDescendants()) do
-        if v:IsA("BasePart") or v:IsA("MeshPart") then
-            v.Material = Enum.Material.ForceField
-            v.Color = Color3.fromRGB(255, 255, 255)
-        end
-    end
-end
-LocalPlayer.CharacterAdded:Connect(function(char) task.wait(0.5) ApplyWhiteAura(char) end)
-if LocalPlayer.Character then ApplyWhiteAura(LocalPlayer.Character) end
 
 local function CreateRoundBtn(text, pos, color)
     local Btn = Instance.new("TextButton")
@@ -122,31 +81,11 @@ MainFrame.BackgroundTransparency = 0.3
 Instance.new("UICorner", MainFrame)
 MakeDraggable(MainFrame)
 
-local MiniBtn = Instance.new("TextButton")
-MiniBtn.Parent = MainFrame
-MiniBtn.Size = UDim2.new(0, 20, 0, 20)
-MiniBtn.Position = UDim2.new(1, -25, 0, 5)
-MiniBtn.Text = "-"
-MiniBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", MiniBtn)
-
 local Content = Instance.new("Frame")
 Content.Parent = MainFrame
 Content.Size = UDim2.new(1, 0, 1, -30)
 Content.Position = UDim2.new(0, 0, 0, 30)
 Content.BackgroundTransparency = 1
-
-MiniBtn.MouseButton1Click:Connect(function()
-    Content.Visible = not Content.Visible
-    if Content.Visible then
-        MainFrame.Size = UDim2.new(0, 110, 0, 185)
-        MiniBtn.Text = "-"
-    else
-        MainFrame.Size = UDim2.new(0, 110, 0, 30)
-        MiniBtn.Text = "+"
-    end
-end)
 
 local function CreateMenuBtn(name, pos)
     local Btn = Instance.new("TextButton")
@@ -165,10 +104,88 @@ end
 local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 0))
 local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 35))
 local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 70))
-local EspBtn = CreateMenuBtn("ESP ALL", UDim2.new(0, 5, 0, 105))
+local EspBtn = CreateMenuBtn("ESP", UDim2.new(0, 5, 0, 105))
 
+local SliderFrame = Instance.new("Frame")
+SliderFrame.Parent = ScreenGui
+SliderFrame.Size = UDim2.new(0, 150, 0, 40)
+SliderFrame.Position = UDim2.new(0.5, -75, 0.8, 0)
+SliderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SliderFrame.Visible = false
+Instance.new("UICorner", SliderFrame)
+
+local SliderBar = Instance.new("Frame")
+SliderBar.Parent = SliderFrame
+SliderBar.Size = UDim2.new(0.9, 0, 0, 5)
+SliderBar.Position = UDim2.new(0.05, 0, 0.6, 0)
+SliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+
+local SliderDot = Instance.new("Frame")
+SliderDot.Parent = SliderBar
+SliderDot.Size = UDim2.new(0, 15, 0, 15)
+SliderDot.Position = UDim2.new(0.5, -7, 0.5, -7)
+SliderDot.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+Instance.new("UICorner", SliderDot).CornerRadius = UDim.new(1, 0)
+
+local SliderVal = Instance.new("TextLabel")
+SliderVal.Parent = SliderFrame
+SliderVal.Size = UDim2.new(1, 0, 0.5, 0)
+SliderVal.Text = "Hitbox Size: 15"
+SliderVal.TextColor3 = Color3.fromRGB(255, 255, 255)
+SliderVal.BackgroundTransparency = 1
+SliderVal.Font = Enum.Font.GothamBold
+
+local HitSize = 15
 local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn = nil, false, false, false, false, false
 local Degree = 0
+
+local function UpdateHitbox(input)
+    local Pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
+    SliderDot.Position = UDim2.new(Pos, -7, 0.5, -7)
+    HitSize = math.floor(Pos * 50)
+    SliderVal.Text = "Hitbox Size: " .. HitSize
+end
+
+HitboxBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local Hold = true
+        local Connection = input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then Hold = false end
+        end)
+        task.wait(0.5)
+        if Hold then
+            SliderFrame.Visible = true
+            local MoveConn = UserInputService.InputChanged:Connect(function(move)
+                if move.UserInputType == Enum.UserInputType.Touch or move.UserInputType == Enum.UserInputType.MouseMovement then
+                    UpdateHitbox(move)
+                end
+            end)
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    MoveConn:Disconnect()
+                    task.wait(1)
+                    SliderFrame.Visible = false
+                end
+            end)
+        else
+            HitOn = not HitOn
+            HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
+        end
+        Connection:Disconnect()
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if StrafeOn and LockedPlayer then
+            local Tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if Tool then
+                Tool:Activate()
+            end
+        end
+        task.wait(0.1)
+    end
+end)
 
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
@@ -176,81 +193,30 @@ LockBtn.MouseButton1Click:Connect(function()
         local Target, MinDist = nil, math.huge
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                local Dist = (v.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Magnitude
-                if Dist < MinDist then MinDist = Dist; Target = v end
+                local Hum = v.Character:FindFirstChild("Humanoid")
+                if Hum and Hum.Health > 0 then
+                    local Dist = (v.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Magnitude
+                    if Dist < MinDist then MinDist = Dist; Target = v end
+                end
             end
         end
         if Target then 
             LockedPlayer = Target
             LockStroke.Color = Color3.fromRGB(255, 255, 255)
             Camera.CameraType = Enum.CameraType.Scriptable
+            Notify("Lock & Auto Shoot: ON", Color3.fromRGB(0, 255, 0))
         else StrafeOn = false end
     else
         LockedPlayer = nil
         LockStroke.Color = Color3.fromRGB(0, 255, 0)
         Camera.CameraType = Enum.CameraType.Custom
+        Notify("Lock & Auto Shoot: OFF", Color3.fromRGB(255, 0, 0))
     end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn; SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn; FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn; HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn; EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
-
-local DaHoodSettings = {
-    SilentAim = true,
-    Prediction = 0.138
-}
-
-local function GetAimingCheck()
-    if not (Aiming.Enabled == true and Aiming.Selected ~= LocalPlayer and Aiming.SelectedPart ~= nil) then
-        return false
-    end
-    local Character = Aiming.Character(Aiming.Selected)
-    local BodyEffects = Character:FindFirstChild("BodyEffects")
-    if BodyEffects then
-        local KOd = BodyEffects:FindFirstChild("K.O") and BodyEffects["K.O"].Value
-        local Grabbed = Character:FindFirstChild("GRABBING_CONSTRAINT") ~= nil
-        if (KOd or Grabbed) then return false end
-    end
-    return true
-end
-
-local RawHook
-RawHook = hookmetamethod(game, "__index", function(self, key)
-    if self:IsA("Mouse") and (key == "Hit" or key == "Target") and GetAimingCheck() and StrafeOn then
-        if DaHoodSettings.SilentAim then
-            local Part = Aiming.SelectedPart
-            local Hit = Part.CFrame + (Part.Velocity * DaHoodSettings.Prediction)
-            return (key == "Hit" and Hit or Part)
-        end
-    end
-    return RawHook(self, key)
-end)
-
-LockBtn.MouseButton1Click:Connect(function()
-    StrafeOn = not StrafeOn
-    if StrafeOn then
-        Aiming.Enabled = true
-        local Target = GetClosestPlayer()
-        if Target then 
-            LockedPlayer = Target
-            LockStroke.Color = Color3.fromRGB(255, 255, 255)
-            Camera.CameraType = Enum.CameraType.Scriptable
-            Notify("Lock & Silent Aim: ON", Color3.fromRGB(0, 255, 0))
-        else 
-            StrafeOn = false 
-            Aiming.Enabled = false
-        end
-    else
-        LockedPlayer = nil
-        StrafeOn = false
-        Aiming.Enabled = false
-        LockStroke.Color = Color3.fromRGB(0, 255, 0)
-        Camera.CameraType = Enum.CameraType.Custom
-        Notify("Lock & Silent Aim: OFF", Color3.fromRGB(255, 0, 0))
-    end
-end)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
@@ -272,9 +238,7 @@ RunService.RenderStepped:Connect(function()
         if v ~= LocalPlayer and v.Character then
             local pChar = v.Character
             local pRoot = pChar:FindFirstChild("HumanoidRootPart")
-            local pHum = pChar:FindFirstChild("Humanoid")
-            
-            if EspOn and pRoot and pHum then
+            if EspOn and pRoot then
                 local Tag = pRoot:FindFirstChild("EspTag")
                 if not Tag then
                     Tag = Instance.new("BillboardGui", pRoot)
@@ -290,19 +254,17 @@ RunService.RenderStepped:Connect(function()
                     L.Font = Enum.Font.GothamBold
                     L.Name = "TextLabel"
                 end
-                
                 local Tool = pChar:FindFirstChildOfClass("Tool")
                 local ToolName = Tool and Tool.Name or "None"
-                local HP = math.floor(pHum.Health)
+                local HP = pChar:FindFirstChild("Humanoid") and math.floor(pChar.Humanoid.Health) or 0
                 Tag.TextLabel.Text = v.Name .. " [" .. ToolName .. "]\nHP: " .. HP
                 Tag.TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
             else
                 local Tag = pRoot and pRoot:FindFirstChild("EspTag")
                 if Tag then Tag:Destroy() end
             end
-
             if HitOn and pRoot then
-                pRoot.Size = Vector3.new(30, 30, 30)
+                pRoot.Size = Vector3.new(HitSize, HitSize, HitSize)
                 pRoot.Transparency = 0.7
                 pRoot.CanCollide = false
             elseif pRoot then
@@ -313,6 +275,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-task.delay(1, function()
-    Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
-end)
+Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
