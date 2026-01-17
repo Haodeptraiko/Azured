@@ -189,7 +189,7 @@ SliderVal.Font = Enum.Font.GothamBold
 local HitSize = 15
 local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, AntiOn = nil, false, false, false, false, false, false
 local Degree = 0
-local AntiVelocity = -0.27
+local AntiVelocity = -1.85
 
 local function UpdateHitbox(input)
     local Pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
@@ -239,23 +239,11 @@ EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 
 AntiBtn.MouseButton1Click:Connect(function() AntiOn = not AntiOn AntiBtn.TextColor3 = AntiOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 SoundBtn.MouseButton1Click:Connect(function() getgenv().hitsoundEnabled = not getgenv().hitsoundEnabled SoundBtn.Text = getgenv().hitsoundEnabled and "SOUND: ON" or "SOUND: OFF" SoundBtn.TextColor3 = getgenv().hitsoundEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
-local function GetGun()
-    local Tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Handle") then return Tool end
-    return nil
-end
-
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
     trackHealth()
-
-    local CurrentGun = GetGun()
-    if CurrentGun and (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)) then
-        CurrentGun:Activate()
-    end
-
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         Degree = Degree + 1.5
@@ -265,7 +253,10 @@ RunService.RenderStepped:Connect(function()
     end
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
     if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
-    if AntiOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * AntiVelocity) end
+    if AntiOn and Hum.MoveDirection.Magnitude > 0 then 
+        Root.CFrame = Root.CFrame + (Hum.MoveDirection * AntiVelocity)
+        Root.Velocity = Hum.MoveDirection * (AntiVelocity * 100)
+    end
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character then
             local pRoot = v.Character:FindFirstChild("HumanoidRootPart")
@@ -283,4 +274,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Notify("Azured!", Color3.fromRGB(0, 255, 0))
+Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
