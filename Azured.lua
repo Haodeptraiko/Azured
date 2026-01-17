@@ -7,10 +7,10 @@ getgenv().FovSize = 600
 getgenv().FlySpeed = 2.5
 getgenv().WalkSpeedValue = 1.2
 getgenv().HitboxSize = 5
-getgenv().LockSmoothness = 0.18
+getgenv().LockSmoothness = 0.15
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Dylan_Mobile_BigFOV_V11"
+ScreenGui.Name = "Dylan_Mobile_Ultra_V12"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -24,7 +24,7 @@ FovCircle.BackgroundTransparency = 0.98
 FovCircle.Visible = true
 Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
 local FovStroke = Instance.new("UIStroke", FovCircle)
-FovStroke.Thickness = 1.5
+FovStroke.Thickness = 1
 FovStroke.Color = Color3.fromRGB(0, 255, 255)
 
 local function GetClosestTarget()
@@ -37,7 +37,10 @@ local function GetClosestTarget()
                 local ScreenPos, OnScreen = Camera:WorldToScreenPoint(v.Character.LowerTorso.Position)
                 if OnScreen then
                     local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
-                    if Dist < ClosestDist then ClosestDist = Dist; Target = v end
+                    if Dist < ClosestDist then
+                        ClosestDist = Dist
+                        Target = v
+                    end
                 end
             end
         end
@@ -53,13 +56,13 @@ mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if method == "FireServer" and self.Name == "MainEvent" and (args[1] == "Shoot" or args[1] == "UpdateMousePos") then
         local Target = GetClosestTarget()
-        if Target and Target.Character:FindFirstChild("LowerTorso") then
+        if Target and Target.Character and Target.Character:FindFirstChild("LowerTorso") then
             local TPart = Target.Character.LowerTorso
             local Vel = TPart.Velocity
-            if Vel.Magnitude > 50 or math.abs(Vel.Y) > 20 then
+            if Vel.Magnitude > 60 then
                 args[2] = TPart.Position
             else
-                args[2] = TPart.Position + (Vel * 0.15)
+                args[2] = TPart.Position + (Vel * 0.145)
             end
             return oldNamecall(self, unpack(args))
         end
@@ -100,17 +103,23 @@ LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local Target = GetClosestTarget()
-        if Target then LockedPlayer = Target LockBtn.Text = "🔒" LockBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0) LockStroke.Color = Color3.fromRGB(255, 0, 0)
+        if Target then 
+            LockedPlayer = Target 
+            LockBtn.Text = "🔒" 
+            LockBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+            LockStroke.Color = Color3.fromRGB(255, 0, 0)
         else StrafeOn = false end
-    else LockedPlayer = nil LockBtn.Text = "🔓" LockBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15) LockStroke.Color = Color3.fromRGB(0, 255, 255) end
+    else 
+        LockedPlayer = nil 
+        LockBtn.Text = "🔓" 
+        LockBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        LockStroke.Color = Color3.fromRGB(0, 255, 255)
+    end
 end)
 
 FlyBtn.MouseButton1Click:Connect(function() 
     FlyOn = not FlyOn 
     FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255)
-    if not FlyOn and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.PlatformStand = false
-    end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255) end)
@@ -127,8 +136,7 @@ RunService.Stepped:Connect(function()
         Root.Velocity = Vector3.new(0, 0, 0)
         local RawMove = Hum.MoveDirection
         if RawMove.Magnitude > 0 then
-            local FlyMove = Vector3.new(RawMove.X, 0, RawMove.Z)
-            Root.CFrame = Root.CFrame + (FlyMove * getgenv().FlySpeed)
+            Root.CFrame = Root.CFrame + (Vector3.new(RawMove.X, 0, RawMove.Z) * getgenv().FlySpeed)
         end
     else
         Hum.PlatformStand = false
@@ -141,8 +149,9 @@ RunService.Stepped:Connect(function()
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("LowerTorso") then
         local TPart = LockedPlayer.Character.LowerTorso
         if LockedPlayer.Character.Humanoid.Health > 0 then
-            Degree = Degree + 0.05
-            local TargetPos = TPart.Position + Vector3.new(math.sin(Degree) * 12, 4, math.cos(Degree) * 12)
+            Degree = Degree + 0.06
+            local Offset = Vector3.new(math.sin(Degree) * 12, 5, math.cos(Degree) * 12)
+            local TargetPos = TPart.Position + Offset
             Root.CFrame = Root.CFrame:Lerp(CFrame.new(TargetPos, TPart.Position), getgenv().LockSmoothness)
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TPart.Position), getgenv().LockSmoothness)
         else
@@ -160,5 +169,7 @@ RunService.Stepped:Connect(function()
         end
     end
 
-    if StompOn then game:GetService("ReplicatedStorage").MainEvent:FireServer("Stomp") end
+    if StompOn then
+        game:GetService("ReplicatedStorage").MainEvent:FireServer("Stomp")
+    end
 end)
