@@ -1,6 +1,8 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -24,9 +26,9 @@ local function Notify(text, color)
     NotifyLabel.TextSize = 18
     local Stroke = Instance.new("UIStroke", NotifyLabel)
     Stroke.Thickness = 2
-    game:GetService("TweenService"):Create(NotifyLabel, TweenInfo.new(0.5), {Position = UDim2.new(0, 0, 0.15, 0)}):Play()
+    TweenService:Create(NotifyLabel, TweenInfo.new(0.5), {Position = UDim2.new(0, 0, 0.15, 0)}):Play()
     task.delay(2, function()
-        game:GetService("TweenService"):Create(NotifyLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+        TweenService:Create(NotifyLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
         task.wait(0.5)
         NotifyLabel:Destroy()
     end)
@@ -37,7 +39,7 @@ local function playHitsound()
         local sound = Instance.new("Sound")
         sound.SoundId = getgenv().selectedHitsound
         sound.Volume = 3
-        sound.Parent = game:GetService("SoundService")
+        sound.Parent = SoundService
         sound:Play()
         sound.Ended:Connect(function() sound:Destroy() end)
     end
@@ -237,11 +239,23 @@ EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 
 AntiBtn.MouseButton1Click:Connect(function() AntiOn = not AntiOn AntiBtn.TextColor3 = AntiOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 SoundBtn.MouseButton1Click:Connect(function() getgenv().hitsoundEnabled = not getgenv().hitsoundEnabled SoundBtn.Text = getgenv().hitsoundEnabled and "SOUND: ON" or "SOUND: OFF" SoundBtn.TextColor3 = getgenv().hitsoundEnabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
+local function GetGun()
+    local Tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if Tool and Tool:FindFirstChild("Handle") then return Tool end
+    return nil
+end
+
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
     trackHealth()
+
+    local CurrentGun = GetGun()
+    if CurrentGun and (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)) then
+        CurrentGun:Activate()
+    end
+
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         Degree = Degree + 1.5
@@ -269,4 +283,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-Notify("Azured.gg!", Color3.fromRGB(0, 255, 0))
+Notify("Azured!", Color3.fromRGB(0, 255, 0))
