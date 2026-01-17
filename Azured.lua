@@ -4,14 +4,14 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-getgenv().Prediction = 0.155
 getgenv().FovSize = 250
 getgenv().FlySpeed = 5
 getgenv().WalkSpeedValue = 1.5
 getgenv().HitboxSize = 5
+getgenv().LockSmoothness = 0.18
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DaHood_Bypass_V4"
+ScreenGui.Name = "Azured_V3_Premium"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -24,6 +24,9 @@ FovCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 FovCircle.BackgroundTransparency = 0.98
 FovCircle.Visible = true
 Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
+local FovStroke = Instance.new("UIStroke", FovCircle)
+FovStroke.Thickness = 1.5
+FovStroke.Color = Color3.fromRGB(0, 255, 255)
 
 local function GetClosestTarget()
     local Target, ClosestDist = nil, getgenv().FovSize / 2
@@ -52,8 +55,7 @@ mt.__namecall = newcclosure(function(self, ...)
     if method == "FireServer" and self.Name == "MainEvent" and (args[1] == "Shoot" or args[1] == "UpdateMousePos") then
         local Target = GetClosestTarget()
         if Target and Target.Character:FindFirstChild("LowerTorso") then
-            local TPart = Target.Character.LowerTorso
-            args[2] = TPart.Position + (TPart.Velocity * getgenv().Prediction)
+            args[2] = Target.Character.LowerTorso.Position
             return oldNamecall(self, unpack(args))
         end
     end
@@ -61,47 +63,75 @@ mt.__namecall = newcclosure(function(self, ...)
 end)
 setreadonly(mt, true)
 
-local function CreateBtn(text, pos, sizeX, sizeY)
+local function CreatePremiumBtn(text, pos, sizeX, sizeY, isMain)
     local Btn = Instance.new("TextButton")
     Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, sizeX or 80, 0, sizeY or 80)
+    Btn.Size = UDim2.new(0, sizeX, 0, sizeY)
     Btn.Position = pos
     Btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-    Btn.BackgroundTransparency = 0.4
+    Btn.BackgroundTransparency = 0.1
     Btn.Text = text
     Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = 20
-    Instance.new("UICorner", Btn)
-    return Btn
+    Btn.TextSize = isMain and 45 or 14
+    local Corner = Instance.new("UICorner", Btn)
+    Corner.CornerRadius = UDim.new(0, 12)
+    local Stroke = Instance.new("UIStroke", Btn)
+    Stroke.Thickness = 2.5
+    Stroke.Color = Color3.fromRGB(0, 255, 255)
+    return Btn, Stroke
 end
 
-local LockBtn = CreateBtn("🔓", UDim2.new(0.85, 0, 0.1, 0), 90, 90)
-LockBtn.TextSize = 50
-local FlyBtn = CreateBtn("FLY", UDim2.new(0.85, 10, 0.25, 0), 70, 40)
-local SpeedBtn = CreateBtn("SPEED", UDim2.new(0.85, 10, 0.32, 0), 70, 40)
-local HitboxBtn = CreateBtn("HITBOX", UDim2.new(0.85, 10, 0.39, 0), 70, 40)
+local LockBtn, LockStroke = CreatePremiumBtn("🔓", UDim2.new(0.85, 0, 0.1, 0), 90, 90, true)
+local MenuFrame = Instance.new("Frame")
+MenuFrame.Parent = ScreenGui
+MenuFrame.Size = UDim2.new(0, 100, 0, 200)
+MenuFrame.Position = UDim2.new(0.85, 0, 0.25, 0)
+MenuFrame.BackgroundTransparency = 1
 
-local LockedPlayer, StrafeOn, FlyOn, SpeedOn, HitboxOn = nil, false, false, false, false
+local FlyBtn = CreatePremiumBtn("FLY", UDim2.new(0, 5, 0, 0), 80, 35, false)
+FlyBtn.Parent = MenuFrame
+local SpeedBtn = CreatePremiumBtn("SPEED", UDim2.new(0, 5, 0, 45), 80, 35, false)
+SpeedBtn.Parent = MenuFrame
+local HitboxBtn = CreatePremiumBtn("HITBOX", UDim2.new(0, 5, 0, 90), 80, 35, false)
+HitboxBtn.Parent = MenuFrame
+local StompBtn = CreatePremiumBtn("STOMP", UDim2.new(0, 5, 0, 135), 80, 35, false)
+StompBtn.Parent = MenuFrame
+
+local LockedPlayer, StrafeOn, FlyOn, SpeedOn, HitboxOn, StompOn = nil, false, false, false, false, false
+local Degree = 0
 
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local Target = GetClosestTarget()
-        if Target then LockedPlayer = Target LockBtn.Text = "🔒" LockBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-        else StrafeOn = false end
-    else LockedPlayer = nil LockBtn.Text = "🔓" LockBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10) end
+        if Target then 
+            LockedPlayer = Target 
+            LockBtn.Text = "🔒" 
+            LockBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+            LockStroke.Color = Color3.fromRGB(255, 0, 0)
+            FovStroke.Color = Color3.fromRGB(255, 0, 0)
+        else 
+            StrafeOn = false 
+        end
+    else 
+        LockedPlayer = nil 
+        LockBtn.Text = "🔓" 
+        LockBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+        LockStroke.Color = Color3.fromRGB(0, 255, 255)
+        FovStroke.Color = Color3.fromRGB(0, 255, 255)
+    end
 end)
 
-FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255) end)
-SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255) end)
-HitboxBtn.MouseButton1Click:Connect(function() HitboxOn = not HitboxOn HitboxBtn.TextColor3 = HitboxOn and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255) end)
+FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255) end)
+SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255) end)
+HitboxBtn.MouseButton1Click:Connect(function() HitboxOn = not HitboxOn HitboxBtn.TextColor3 = HitboxOn and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255) end)
+StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.TextColor3 = StompOn and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(255, 255, 255) end)
 
 RunService.Stepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-    local Root = Char.HumanoidRootPart
-    local Hum = Char.Humanoid
+    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
     if FlyOn then
         Root.Velocity = Vector3.new(0, 0.1, 0)
@@ -117,10 +147,12 @@ RunService.Stepped:Connect(function()
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("LowerTorso") then
         local TPart = LockedPlayer.Character.LowerTorso
         if LockedPlayer.Character.Humanoid.Health > 0 then
-            local CamTarget = CFrame.new(Camera.CFrame.Position, TPart.Position + (TPart.Velocity * getgenv().Prediction))
-            Camera.CFrame = Camera.CFrame:Lerp(CamTarget, 0.15)
+            Degree = Degree + 0.05
+            local TargetPos = TPart.Position + Vector3.new(math.sin(Degree) * 12, 4, math.cos(Degree) * 12)
+            Root.CFrame = Root.CFrame:Lerp(CFrame.new(TargetPos, TPart.Position), getgenv().LockSmoothness)
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TPart.Position), getgenv().LockSmoothness)
         else
-            StrafeOn = false LockedPlayer = nil LockBtn.Text = "🔓" LockBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+            StrafeOn = false LockedPlayer = nil LockBtn.Text = "🔓" LockBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10) LockStroke.Color = Color3.fromRGB(0, 255, 255)
         end
     end
 
@@ -133,5 +165,9 @@ RunService.Stepped:Connect(function()
                 T.CanCollide = false
             end
         end
+    end
+
+    if StompOn then
+        game:GetService("ReplicatedStorage").MainEvent:FireServer("Stomp")
     end
 end)
