@@ -9,10 +9,10 @@ local Mouse = LocalPlayer:GetMouse()
 local FovSize = 150
 local StompRange = 15 
 local HitSize = 15
-local StickySmoothness = 0.15
+local SpeedMultiplier = 3.5
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Final_V42"
+ScreenGui.Name = "Azured_Final_V44"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -146,8 +146,9 @@ LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local T = GetTarget()
-        if T then LockedPlayer = T end
-    else LockedPlayer = nil end
+        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable
+        else StrafeOn = false end
+    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
@@ -183,12 +184,15 @@ RunService.RenderStepped:Connect(function()
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
     local Tool = Char:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Ammo") and Tool.Ammo.Value == 0 then
-        ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
-    end
-
-    if RapidOn and Tool and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-        Tool:Activate()
+    if Tool and Tool:FindFirstChild("Ammo") then
+        if Tool.Ammo.Value == 0 then
+            ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
+        end
+        if RapidOn and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+            local T = GetTarget()
+            local Pos = T and T.Character and T.Character.Head.Position or Mouse.Hit.p
+            ReplicatedStorage.MainEvent:FireServer("Shoot", Pos)
+        end
     end
 
     local CurrentTarget = GetTarget()
@@ -199,24 +203,20 @@ RunService.RenderStepped:Connect(function()
         HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
         local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
         ArmorLabel.Text = "Armor: " .. armorValue
-        
-        -- Sticky Aim Logic
-        if StrafeOn then
-            local TargetPos = CurrentTarget.Character.Head.Position
-            local MainPos = Camera:WorldToViewportPoint(TargetPos)
-            local MousePos = UserInputService:GetMouseLocation()
-            local TargetVec = Vector2.new(MainPos.X, MainPos.Y)
-            local SmoothPos = MousePos:Lerp(TargetVec, StickySmoothness)
-            
-            -- Muot ma di chuyen tam ngam
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TargetPos), StickySmoothness)
-        end
     else
         TargetUI.Visible = false
     end
 
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
-    if FlyOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local TRoot = LockedPlayer.Character.HumanoidRootPart
+        Degree = Degree + 0.025
+        local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
+        Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
+        Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
+    end
+
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
 
     if StompOn then
         for _, v in pairs(Players:GetPlayers()) do
