@@ -7,18 +7,19 @@ local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
 local FovSize = 150
-local StompRange = 15 
+local StompRange = 20 
 local HitSize = 15
 local SpeedMultiplier = 3.5
+local Prediction = 0.135
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Chest_V55"
+ScreenGui.Name = "Azured_Nuke_V55"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local function Notify(txt)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Azured PC",
+        Title = "Azured System",
         Text = txt,
         Duration = 2
     })
@@ -113,7 +114,7 @@ end
 local LockBtn = Instance.new("TextButton")
 LockBtn.Parent = ScreenGui
 LockBtn.Size = UDim2.new(0, 60, 0, 60)
-LockBtn.Position = UDim2.new(0.85, 0, 0.2, 0)
+LockBtn.Position = UDim2.new(0.85, 0, 0.1, 0)
 LockBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 LockBtn.Text = "LOCK"
 LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -125,15 +126,30 @@ LockStroke.Thickness = 2
 LockStroke.Color = Color3.fromRGB(70, 70, 70)
 MakeDraggable(LockBtn)
 
+local AuraBtn = CreateBigBtn("KILL ALL", UDim2.new(0.85, -20, 0.24, 0))
 local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
 local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
 local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
 local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AuraOn = nil, false, false, false, false, false, false
 local Degree = 0
 
-local function GetTarget()
+local function GetServerTarget()
+    local BestTarget = nil
+    local Dist = math.huge
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") then
+            if v.Character.Humanoid.Health > 0 then
+                local d = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                if d < Dist then Dist = d BestTarget = v end
+            end
+        end
+    end
+    return BestTarget
+end
+
+local function GetFovTarget()
     local Target, MinDist = nil, FovSize / 2
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     for _, v in pairs(Players:GetPlayers()) do
@@ -141,8 +157,10 @@ local function GetTarget()
             local Hum = v.Character:FindFirstChild("Humanoid")
             if Hum and Hum.Health > 0 then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
-                if Dist < MinDist then MinDist = Dist; Target = v end
+                if OnScreen then
+                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
+                    if Dist < MinDist then MinDist = Dist Target = v end
+                end
             end
         end
     end
@@ -150,28 +168,26 @@ local function GetTarget()
 end
 
 local function GetChestPos(p)
-    if p.Character:FindFirstChild("UpperTorso") then return p.Character.UpperTorso.Position
-    elseif p.Character:FindFirstChild("HumanoidRootPart") then return p.Character.HumanoidRootPart.Position
+    if p and p.Character then
+        local Part = p.Character:FindFirstChild("UpperTorso") or p.Character:FindFirstChild("HumanoidRootPart")
+        if Part then return Part.Position + (Part.Velocity * Prediction) end
     end
     return nil
 end
 
+AuraBtn.MouseButton1Click:Connect(function() 
+    AuraOn = not AuraOn 
+    AuraBtn.Text = AuraOn and "KILL ALL: ON" or "KILL ALL: OFF"
+    if not AuraOn then Camera.CameraType = Enum.CameraType.Custom end
+end)
+
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
-        local T = GetTarget()
-        if T then 
-            LockedPlayer = T 
-            Camera.CameraType = Enum.CameraType.Scriptable
-            Notify("Lock ON: " .. T.Name)
-        else 
-            StrafeOn = false 
-        end
-    else 
-        LockedPlayer = nil 
-        Camera.CameraType = Enum.CameraType.Custom
-        Notify("Lock OFF")
-    end
+        local T = GetFovTarget()
+        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Lock ON: " .. T.Name)
+        else StrafeOn = false end
+    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
@@ -189,12 +205,9 @@ mt.__namecall = newcclosure(function(self, ...)
     local method = getnamecallmethod()
     if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
         if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
-            local T = GetTarget()
-            local Pos = T and GetChestPos(T)
-            if Pos then
-                args[2] = Pos
-                return oldNamecall(self, unpack(args))
-            end
+            local T = (AuraOn and GetServerTarget()) or LockedPlayer or GetFovTarget()
+            local Pos = GetChestPos(T)
+            if Pos then args[2] = Pos return oldNamecall(self, unpack(args)) end
         end
     end
     return oldNamecall(self, ...)
@@ -202,54 +215,79 @@ end)
 
 mt.__index = newcclosure(function(self, idx)
     if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
-        local T = GetTarget()
-        local Pos = T and GetChestPos(T)
-        if Pos then
-            return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart)
-        end
+        local T = (AuraOn and GetServerTarget()) or LockedPlayer or GetFovTarget()
+        local Pos = GetChestPos(T)
+        if Pos then return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart) end
     end
     return oldIndex(self, idx)
 end)
-
 setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-
     local Tool = Char:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Ammo") then
-        if Tool.Ammo.Value == 0 then
-            ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
+
+    if Tool and Tool:FindFirstChild("Ammo") and Tool.Ammo.Value == 0 then
+        ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
+    end
+
+    if AuraOn then
+        local ATarget = GetServerTarget()
+        if ATarget and ATarget.Character then
+            local TRoot = ATarget.Character:FindFirstChild("HumanoidRootPart")
+            local THum = ATarget.Character:FindFirstChild("Humanoid")
+            if TRoot and THum then
+                TargetUI.Visible = true
+                TargetName.Text = "KILLING: " .. ATarget.Name
+                HealthBarMain.Size = UDim2.new(math.clamp(THum.Health / THum.MaxHealth, 0, 1), 0, 1, 0)
+                
+                if THum.Health > 15 then
+                    Degree = Degree + 0.07
+                    local Pos = TRoot.Position + Vector3.new(math.sin(Degree) * 12, 7, math.cos(Degree) * 12)
+                    Root.CFrame = CFrame.new(Pos, TRoot.Position)
+                    Root.Velocity = Vector3.new(0, 0, 0)
+                    if Tool then 
+                        Tool:Activate() 
+                        ReplicatedStorage.MainEvent:FireServer("Shoot", GetChestPos(ATarget)) 
+                    end
+                else
+                    Root.CFrame = TRoot.CFrame * CFrame.new(0, 2, 0)
+                    Root.Velocity = Vector3.new(0, 0, 0)
+                    ReplicatedStorage.MainEvent:FireServer("Stomp")
+                end
+            end
+        else TargetUI.Visible = false end
+    else
+        local CTarget = LockedPlayer or GetFovTarget()
+        if CTarget and CTarget.Character and CTarget.Character:FindFirstChild("Humanoid") then
+            local tHum = CTarget.Character.Humanoid
+            TargetUI.Visible = true
+            TargetName.Text = CTarget.Name
+            HealthBarMain.Size = UDim2.new(math.clamp(tHum.Health / tHum.MaxHealth, 0, 1), 0, 1, 0)
+            local armorValue = CTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
+            ArmorLabel.Text = "Armor: " .. armorValue
+        else TargetUI.Visible = false end
+
+        if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local TRoot = LockedPlayer.Character.HumanoidRootPart
+            Degree = Degree + 0.025
+            local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
+            Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
+            Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
         end
     end
 
-    local CurrentTarget = GetTarget()
-    if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
-        local targetHum = CurrentTarget.Character.Humanoid
-        TargetUI.Visible = true
-        TargetName.Text = CurrentTarget.Name
-        HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
-        local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
-        ArmorLabel.Text = "Armor: " .. armorValue
-    else
-        TargetUI.Visible = false
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 and not AuraOn then 
+        Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) 
+    end
+    if FlyOn and not StrafeOn and not AuraOn then 
+        Root.Velocity = Vector3.new(0, 0, 0) 
+        Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) 
     end
 
-    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local TRoot = LockedPlayer.Character.HumanoidRootPart
-        local TChest = GetChestPos(LockedPlayer) or TRoot.Position
-        Degree = Degree + 0.025
-        local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
-        Root.CFrame = CFrame.new(TargetPos, TChest)
-        Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
-    end
-
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
-    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
-
-    if StompOn then
+    if StompOn and not AuraOn then
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                 local eRoot = v.Character.HumanoidRootPart
