@@ -12,22 +12,31 @@ local StompRange = 25
 local HitSize = 15
 local SpeedMultiplier = 3.5
 local Prediction = 0.135
-local SpinSpeed = 180
-local JitterAmount = 5
-local FakeVelMultiplier = 30
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Nuke_V110"
+ScreenGui.Name = "Azured_Nuke_V130"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local function Notify(txt)
     StarterGui:SetCore("SendNotification", {
-        Title = "Azured Mobile",
+        Title = "Azured System",
         Text = txt,
         Duration = 2
     })
 end
+
+local FovCircle = Instance.new("Frame")
+FovCircle.Name = "FovCircle"
+FovCircle.Parent = ScreenGui
+FovCircle.Size = UDim2.new(0, FovSize * 2, 0, FovSize * 2)
+FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+FovCircle.BackgroundTransparency = 1
+local StrokeFOV = Instance.new("UIStroke", FovCircle)
+StrokeFOV.Thickness = 1
+StrokeFOV.Color = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
 
 local TargetUI = Instance.new("Frame")
 TargetUI.Name = "TargetUI"
@@ -109,16 +118,14 @@ LockStroke.Thickness = 2
 LockStroke.Color = Color3.fromRGB(70, 70, 70)
 MakeDraggable(LockBtn)
 
-local AntiAimBtn = CreateBigBtn("ANTI AIM", UDim2.new(0.85, -20, 0.12, 0))
-local AuraBtn = CreateBigBtn("KILL ALL", UDim2.new(0.85, -20, 0.2, 0))
-local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.28, 0))
-local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.36, 0))
-local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.44, 0))
-local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.52, 0))
+local AuraBtn = CreateBigBtn("KILL ALL", UDim2.new(0.85, -20, 0.12, 0))
+local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.2, 0))
+local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.28, 0))
+local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.36, 0))
+local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.44, 0))
 
-local LockedPlayer, LockOn, SpeedOn, FlyOn, HitOn, StompOn, AuraOn, AntiAimOn = nil, false, false, false, false, false, false, false
+local LockedPlayer, LockOn, SpeedOn, FlyOn, HitOn, StompOn, AuraOn = nil, false, false, false, false, false, false
 local Degree = 0
-local AADegree = 0
 
 local function GetServerTarget()
     local BestTarget = nil
@@ -160,12 +167,6 @@ local function GetChestPos(p)
     return nil
 end
 
-AntiAimBtn.MouseButton1Click:Connect(function()
-    AntiAimOn = not AntiAimOn
-    AntiAimBtn.Text = AntiAimOn and "ANTI AIM: ON" or "ANTI AIM: OFF"
-    AntiAimBtn.BackgroundColor3 = AntiAimOn and Color3.fromRGB(180, 0, 0) or Color3.fromRGB(5, 5, 5)
-end)
-
 AuraBtn.MouseButton1Click:Connect(function() 
     AuraOn = not AuraOn 
     AuraBtn.Text = AuraOn and "KILL ALL: ON" or "KILL ALL: OFF"
@@ -176,9 +177,19 @@ LockBtn.MouseButton1Click:Connect(function()
     LockOn = not LockOn
     if LockOn then
         local T = GetFovTarget()
-        if T then LockedPlayer = T LockStroke.Color = Color3.fromRGB(0, 255, 0) Notify("Locked: " .. T.Name)
-        else LockOn = false end
-    else LockedPlayer = nil LockStroke.Color = Color3.fromRGB(70, 70, 70) Notify("Unlocked") end
+        if T then 
+            LockedPlayer = T 
+            LockStroke.Color = Color3.fromRGB(0, 255, 0) 
+            Notify("Locked: " .. T.Name)
+        else 
+            LockOn = false 
+            Notify("No target in FOV")
+        end
+    else 
+        LockedPlayer = nil 
+        LockStroke.Color = Color3.fromRGB(70, 70, 70) 
+        Notify("Unlocked") 
+    end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
@@ -195,12 +206,8 @@ mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
     if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "UpdateMousePos" and AntiAimOn then
-            args[2] = Vector3.new(0, -9999, 0)
-            return oldNamecall(self, unpack(args))
-        end
         if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
-            local CurrentT = (AuraOn and GetServerTarget()) or LockedPlayer or GetFovTarget()
+            local CurrentT = (AuraOn and GetServerTarget()) or (LockOn and LockedPlayer) or GetFovTarget()
             local Pos = GetChestPos(CurrentT)
             if Pos then args[2] = Pos return oldNamecall(self, unpack(args)) end
         end
@@ -210,27 +217,13 @@ end)
 
 mt.__index = newcclosure(function(self, idx)
     if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
-        local CurrentT = (AuraOn and GetServerTarget()) or LockedPlayer or GetFovTarget()
+        local CurrentT = (AuraOn and GetServerTarget()) or (LockOn and LockedPlayer) or GetFovTarget()
         local Pos = GetChestPos(CurrentT)
         if Pos then return (idx == "Hit" and CFrame.new(Pos) or CurrentT.Character:FindFirstChild("UpperTorso") or CurrentT.Character.HumanoidRootPart) end
     end
     return oldIndex(self, idx)
 end)
 setreadonly(mt, true)
-
-RunService.Heartbeat:Connect(function(delta)
-    if not AntiAimOn or AuraOn then return end
-    local Char = LocalPlayer.Character
-    if Char and Char:FindFirstChild("HumanoidRootPart") then
-        local Root = Char.HumanoidRootPart
-        AADegree = AADegree + (SpinSpeed * delta)
-        local jitterX = math.sin(AADegree) * JitterAmount
-        local jitterZ = math.cos(AADegree) * JitterAmount
-        local fakeCFrame = Root.CFrame * CFrame.Angles(0, math.rad(AADegree), 0) * CFrame.new(jitterX, 0, jitterZ)
-        Root.CFrame = fakeCFrame
-        Root.AssemblyLinearVelocity = Vector3.new(jitterX * FakeVelMultiplier, Root.AssemblyLinearVelocity.Y, jitterZ * FakeVelMultiplier)
-    end
-end)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
@@ -242,7 +235,7 @@ RunService.RenderStepped:Connect(function()
         ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
     end
 
-    local GlobalTarget = (AuraOn and GetServerTarget()) or LockedPlayer or GetFovTarget()
+    local GlobalTarget = (AuraOn and GetServerTarget()) or (LockOn and LockedPlayer)
 
     if GlobalTarget and GlobalTarget.Character and GlobalTarget.Character:FindFirstChild("Humanoid") then
         local targetHum = GlobalTarget.Character.Humanoid
@@ -263,14 +256,19 @@ RunService.RenderStepped:Connect(function()
                 Root.Velocity = Vector3.new(0, 0, 0)
                 ReplicatedStorage.MainEvent:FireServer("Stomp")
             end
+        elseif LockOn and targetHum.Health > 15 then
+            if Tool then Tool:Activate() end
         end
-
-        if LockOn and GlobalTarget and Tool and targetHum.Health > 15 then
-            Tool:Activate()
+        
+        if targetHum.Health <= 0 then
+            if LockOn then 
+                LockedPlayer = nil 
+                LockOn = false 
+                LockStroke.Color = Color3.fromRGB(70, 70, 70) 
+            end
         end
     else
         TargetUI.Visible = false
-        if LockOn then LockedPlayer = nil LockOn = false LockStroke.Color = Color3.fromRGB(70, 70, 70) end
     end
 
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 and not AuraOn then 
