@@ -1,4 +1,4 @@
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Qwisaskid/ui-librarys/main/uwuware%20ui%20source.lua"))()
+local library = loadstring(game:HttpGet('https://garfieldscripts.xyz/ui-libs/janlib.lua'))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
@@ -8,30 +8,24 @@ local Mouse = LocalPlayer:GetMouse()
 local MobileGui = Instance.new("ScreenGui")
 local ToggleBtn = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
-
-MobileGui.Name = "MobileGui"
+MobileGui.Name = "JanLibMobile"
 MobileGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 MobileGui.ResetOnSpawn = false
-
 ToggleBtn.Name = "ToggleBtn"
 ToggleBtn.Parent = MobileGui
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ToggleBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
-ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
+ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
 ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.Text = "AZURED"
-ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+ToggleBtn.Text = "MENU"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.TextSize = 14
 ToggleBtn.Active = true
 ToggleBtn.Draggable = true
-
 UICorner.CornerRadius = UDim.new(1, 0)
 UICorner.Parent = ToggleBtn
-
 ToggleBtn.MouseButton1Click:Connect(function()
-    if library then
-        library:Close()
-    end
+    library:Close()
 end)
 
 local function GetTarget(fov)
@@ -89,22 +83,33 @@ mt.__index = newcclosure(function(self, idx)
 end)
 setreadonly(mt, true)
 
-local LegitTab = library:AddTab("Mobile Legit"); 
+local LegitTab = library:AddTab("Legit"); 
 local LegitColunm1 = LegitTab:AddColumn();
 local LegitMain = LegitColunm1:AddSection("Aim Assist")
-LegitMain:AddToggle{text = "Silent Aim", flag = "SilentAimEnabled"}
-LegitMain:AddSlider{text = "Silent FOV", flag = "SilentAimFOV", min = 0, max = 500, value = 150}
-LegitMain:AddList({text = "Target Part", flag = "SilentAimHitbox", value = "Torso", values = {"Head", "Torso"}});
+LegitMain:AddToggle{text = "Enabled", flag = "AimbotEnabled"}
+LegitMain:AddSlider{text = "Aimbot FOV", flag = "AimbotFov", min = 0, max = 750, value = 105}
+LegitMain:AddList({text = "Hit Box", flag = "AimbotHitbox", value = "Head", values = {"Head", "Torso"}});
 
-local LegitSecond = LegitColunm1:AddSection("Hitbox")
-LegitSecond:AddToggle{text = "Extend Hitbox", flag = "HitboxEnabled"}
-LegitSecond:AddSlider{text = "Size", flag = "ExtendRate", min = 0, max = 20, value = 10}
+local LegitSecond = LegitColunm1:AddSection("Extend Hitbox")
+LegitSecond:AddToggle{text = "Enabled", flag = "HitboxEnabled"}
+LegitSecond:AddSlider{text = "Extend Rate", flag = "ExtendRate", min = 0, max = 15, value = 10}
+
+local LegitColunm2 = LegitTab:AddColumn();
+local LegitForth = LegitColunm2:AddSection("Bullet Redirection")
+LegitForth:AddToggle{text = "Enabled", flag = "SilentAimEnabled"}
+LegitForth:AddSlider{text = "Silent Aim FOV", flag = "SilentAimFOV", min = 0, max = 750, value = 150}
+LegitForth:AddList({text = "Hit Box", flag = "SilentAimHitbox", value = "Torso", values = {"Head", "Torso"}});
 
 local VisualsTab = library:AddTab("Visuals"); 
-local VisualsColunm = VisualsTab:AddColumn();
-local VisualsMain = VisualsColunm:AddSection("Camera")
-VisualsMain:AddToggle{text = "Custom FOV", flag = "ChangeCameraFOV"}
-VisualsMain:AddSlider{text = "FOV Value", flag = "CameraFOV", min = 70, max = 120, value = 100}
+local VisualsColunm2 = VisualsTab:AddColumn();
+local VisualsSecond = VisualsColunm2:AddSection("Camera Visuals")
+VisualsSecond:AddToggle{text = "Change Camera FOV", flag = "ChangeCameraFOV"}
+VisualsSecond:AddSlider{text = "Camera FOV", flag = "CameraFOV", min = 10, max = 120, value = 100}
+
+local SettingsTab = library:AddTab("Settings"); 
+local SettingsColumn = SettingsTab:AddColumn(); 
+local SettingSection = SettingsColumn:AddSection("Menu"); 
+SettingSection:AddBind({text = "Open / Close", flag = "UI Toggle", nomouse = true, key = "End", callback = function() library:Close(); end});
 
 RunService.RenderStepped:Connect(function()
     if library.flags["ChangeCameraFOV"] then
