@@ -7,54 +7,54 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-local FovSize = 200
+local FovSize = 350
 local StompRange = 15 
 local HitSize = 15
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Final_V33"
+ScreenGui.Name = "Azured_Final_V37"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local TargetUI = Instance.new("Frame")
 TargetUI.Name = "TargetUI"
 TargetUI.Parent = ScreenGui
-TargetUI.Size = UDim2.new(0, 150, 0, 55)
-TargetUI.Position = UDim2.new(0.5, -75, 0.6, 0)
+TargetUI.Size = UDim2.new(0, 130, 0, 45)
+TargetUI.Position = UDim2.new(0.5, -65, 0.4, 0)
 TargetUI.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-TargetUI.BackgroundTransparency = 0.2
+TargetUI.BackgroundTransparency = 0.3
 TargetUI.Visible = false
-Instance.new("UICorner", TargetUI)
+Instance.new("UICorner", TargetUI).CornerRadius = UDim.new(0, 6)
 
 local TargetName = Instance.new("TextLabel")
 TargetName.Parent = TargetUI
-TargetName.Size = UDim2.new(1, 0, 0, 20)
+TargetName.Size = UDim2.new(1, 0, 0, 18)
 TargetName.BackgroundTransparency = 1
 TargetName.Text = "None"
 TargetName.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetName.Font = Enum.Font.GothamBold
-TargetName.TextSize = 12
+TargetName.Font = Enum.Font.SourceSansBold
+TargetName.TextSize = 11
 
 local HealthBarBack = Instance.new("Frame")
 HealthBarBack.Parent = TargetUI
 HealthBarBack.Position = UDim2.new(0.1, 0, 0.45, 0)
-HealthBarBack.Size = UDim2.new(0.8, 0, 0, 10)
-HealthBarBack.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+HealthBarBack.Size = UDim2.new(0.8, 0, 0, 6)
+HealthBarBack.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
 
 local HealthBarMain = Instance.new("Frame")
 HealthBarMain.Parent = HealthBarBack
 HealthBarMain.Size = UDim2.new(1, 0, 1, 0)
-HealthBarMain.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+HealthBarMain.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 
 local ArmorLabel = Instance.new("TextLabel")
 ArmorLabel.Parent = TargetUI
 ArmorLabel.Position = UDim2.new(0, 0, 0.65, 0)
-ArmorLabel.Size = UDim2.new(1, 0, 0, 15)
+ArmorLabel.Size = UDim2.new(1, 0, 0, 12)
 ArmorLabel.BackgroundTransparency = 1
 ArmorLabel.Text = "Armor: 0"
-ArmorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-ArmorLabel.Font = Enum.Font.Gotham
-ArmorLabel.TextSize = 10
+ArmorLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+ArmorLabel.Font = Enum.Font.SourceSans
+ArmorLabel.TextSize = 9
 
 local FovCircle = Instance.new("Frame")
 FovCircle.Parent = ScreenGui
@@ -64,7 +64,7 @@ FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FovCircle.BackgroundTransparency = 1
 local StrokeFOV = Instance.new("UIStroke", FovCircle)
 StrokeFOV.Thickness = 1
-StrokeFOV.Color = Color3.fromRGB(150, 150, 150)
+StrokeFOV.Color = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
 
 local function MakeDraggable(obj)
@@ -87,40 +87,40 @@ end
 local function CreateLongBtn(text, pos)
     local Btn = Instance.new("TextButton")
     Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 110, 0, 35)
+    Btn.Size = UDim2.new(0, 100, 0, 30)
     Btn.Position = pos
-    Btn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Btn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
     Btn.Text = text .. ": OFF"
-    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     Btn.Font = Enum.Font.SourceSans
-    Btn.TextSize = 14
+    Btn.TextSize = 13
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
     local S = Instance.new("UIStroke", Btn)
     S.Thickness = 1
-    S.Color = Color3.fromRGB(40, 40, 40)
+    S.Color = Color3.fromRGB(50, 50, 50)
     MakeDraggable(Btn)
     return Btn, S
 end
 
 local LockBtn = Instance.new("TextButton")
 LockBtn.Parent = ScreenGui
-LockBtn.Size = UDim2.new(0, 60, 0, 60)
+LockBtn.Size = UDim2.new(0, 50, 0, 50)
 LockBtn.Position = UDim2.new(0.85, 0, 0.25, 0)
-LockBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LockBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 LockBtn.Text = "LOCK"
-LockBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 LockBtn.Font = Enum.Font.SourceSansBold
-LockBtn.TextSize = 12
+LockBtn.TextSize = 11
 Instance.new("UICorner", LockBtn).CornerRadius = UDim.new(1, 0)
 local LockStroke = Instance.new("UIStroke", LockBtn)
 LockStroke.Thickness = 1
-LockStroke.Color = Color3.fromRGB(40, 40, 40)
+LockStroke.Color = Color3.fromRGB(60, 60, 60)
 MakeDraggable(LockBtn)
 
-local SpeedBtn = CreateLongBtn("SPEED", UDim2.new(0.85, -25, 0.38, 0))
-local FlyBtn = CreateLongBtn("FLY", UDim2.new(0.85, -25, 0.45, 0))
-local StompBtn = CreateLongBtn("STOMP", UDim2.new(0.85, -25, 0.52, 0))
-local HitboxBtn = CreateLongBtn("HITBOX", UDim2.new(0.85, -25, 0.59, 0))
+local SpeedBtn = CreateLongBtn("SPEED", UDim2.new(0.85, -20, 0.35, 0))
+local FlyBtn = CreateLongBtn("FLY", UDim2.new(0.85, -20, 0.41, 0))
+local StompBtn = CreateLongBtn("STOMP", UDim2.new(0.85, -20, 0.47, 0))
+local HitboxBtn = CreateLongBtn("HITBOX", UDim2.new(0.85, -20, 0.53, 0))
 
 local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false
 local Degree = 0
@@ -133,10 +133,8 @@ local function GetTarget()
             local Hum = v.Character:FindFirstChild("Humanoid")
             if Hum and Hum.Health > 0 then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                if OnScreen then
-                    local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
-                    if Dist < MinDist then MinDist = Dist; Target = v end
-                end
+                local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
+                if Dist < MinDist then MinDist = Dist; Target = v end
             end
         end
     end
@@ -162,7 +160,7 @@ local oldIndex, oldNamecall = mt.__index, mt.__namecall
 setreadonly(mt, false)
 
 mt.__index = newcclosure(function(t, k)
-    if t == Mouse and (k == "Hit" or k == "Target") then
+    if not checkcaller() and t == Mouse and (k == "Hit" or k == "Target") then
         local T = GetTarget()
         if T and T.Character and T.Character:FindFirstChild("Head") then
             if k == "Hit" then return T.Character.Head.CFrame end
@@ -175,8 +173,7 @@ end)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
-    
-    if method == "FireServer" and self.Name == "MainEvent" then
+    if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
         if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
             local T = GetTarget()
             if T and T.Character and T.Character:FindFirstChild("Head") then
@@ -200,7 +197,7 @@ RunService.RenderStepped:Connect(function()
         local targetHum = CurrentTarget.Character.Humanoid
         TargetUI.Visible = true
         TargetName.Text = CurrentTarget.Name
-        HealthBarMain.Size = UDim2.new(targetHum.Health / targetHum.MaxHealth, 0, 1, 0)
+        HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
         local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
         ArmorLabel.Text = "Armor: " .. armorValue
     else
@@ -236,20 +233,6 @@ RunService.RenderStepped:Connect(function()
             if pRoot then
                 if HitOn then pRoot.Size = Vector3.new(HitSize, HitSize, HitSize) pRoot.Transparency = 0.8 pRoot.CanCollide = false
                 else pRoot.Size = Vector3.new(2, 2, 1) pRoot.Transparency = 1 end
-            end
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait() do
-        if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-            if tool and tool:FindFirstChild("Handle") then
-                local T = GetTarget()
-                local TargetPos = (T and T.Character and T.Character:FindFirstChild("Head")) and T.Character.Head.Position or Mouse.Hit.Position
-                ReplicatedStorage.MainEvent:FireServer("Shoot", TargetPos)
-                ReplicatedStorage.MainEvent:FireServer("UpdateMousePos", TargetPos)
             end
         end
     end
