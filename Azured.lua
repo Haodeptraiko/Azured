@@ -12,15 +12,23 @@ local HitSize = 15
 local SpeedMultiplier = 3.5
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Final_V44"
+ScreenGui.Name = "Azured_Chest_V55"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local function Notify(txt)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Azured PC",
+        Text = txt,
+        Duration = 2
+    })
+end
 
 local TargetUI = Instance.new("Frame")
 TargetUI.Name = "TargetUI"
 TargetUI.Parent = ScreenGui
-TargetUI.Size = UDim2.new(0, 120, 0, 40)
-TargetUI.Position = UDim2.new(0.02, 0, 0.75, 0)
+TargetUI.Size = UDim2.new(0, 140, 0, 50)
+TargetUI.Position = UDim2.new(0.02, 0, 0.7, 0)
 TargetUI.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TargetUI.BackgroundTransparency = 0.4
 TargetUI.Visible = false
@@ -28,17 +36,17 @@ Instance.new("UICorner", TargetUI).CornerRadius = UDim.new(0, 5)
 
 local TargetName = Instance.new("TextLabel")
 TargetName.Parent = TargetUI
-TargetName.Size = UDim2.new(1, 0, 0, 15)
+TargetName.Size = UDim2.new(1, 0, 0, 20)
 TargetName.BackgroundTransparency = 1
 TargetName.Text = "None"
 TargetName.TextColor3 = Color3.fromRGB(255, 255, 255)
 TargetName.Font = Enum.Font.SourceSansBold
-TargetName.TextSize = 10
+TargetName.TextSize = 12
 
 local HealthBarBack = Instance.new("Frame")
 HealthBarBack.Parent = TargetUI
 HealthBarBack.Position = UDim2.new(0.1, 0, 0.5, 0)
-HealthBarBack.Size = UDim2.new(0.8, 0, 0, 5)
+HealthBarBack.Size = UDim2.new(0.8, 0, 0, 6)
 HealthBarBack.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
 
 local HealthBarMain = Instance.new("Frame")
@@ -48,13 +56,13 @@ HealthBarMain.BackgroundColor3 = Color3.fromRGB(0, 255, 120)
 
 local ArmorLabel = Instance.new("TextLabel")
 ArmorLabel.Parent = TargetUI
-ArmorLabel.Position = UDim2.new(0, 0, 0.7, 0)
-ArmorLabel.Size = UDim2.new(1, 0, 0, 10)
+ArmorLabel.Position = UDim2.new(0, 0, 0.75, 0)
+ArmorLabel.Size = UDim2.new(1, 0, 0, 12)
 ArmorLabel.BackgroundTransparency = 1
 ArmorLabel.Text = "Armor: 0"
 ArmorLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 ArmorLabel.Font = Enum.Font.SourceSans
-ArmorLabel.TextSize = 8
+ArmorLabel.TextSize = 10
 
 local FovCircle = Instance.new("Frame")
 FovCircle.Parent = ScreenGui
@@ -84,46 +92,45 @@ local function MakeDraggable(obj)
     end)
 end
 
-local function CreateLongBtn(text, pos)
+local function CreateBigBtn(text, pos)
     local Btn = Instance.new("TextButton")
     Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 90, 0, 28)
+    Btn.Size = UDim2.new(0, 110, 0, 40)
     Btn.Position = pos
     Btn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
     Btn.Text = text .. ": OFF"
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Btn.Font = Enum.Font.SourceSans
-    Btn.TextSize = 12
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
+    Btn.Font = Enum.Font.SourceSansBold
+    Btn.TextSize = 14
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     local S = Instance.new("UIStroke", Btn)
-    S.Thickness = 1
-    S.Color = Color3.fromRGB(45, 45, 45)
+    S.Thickness = 2
+    S.Color = Color3.fromRGB(60, 60, 60)
     MakeDraggable(Btn)
-    return Btn, S
+    return Btn
 end
 
 local LockBtn = Instance.new("TextButton")
 LockBtn.Parent = ScreenGui
-LockBtn.Size = UDim2.new(0, 45, 0, 45)
-LockBtn.Position = UDim2.new(0.85, 0, 0.25, 0)
+LockBtn.Size = UDim2.new(0, 60, 0, 60)
+LockBtn.Position = UDim2.new(0.85, 0, 0.2, 0)
 LockBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 LockBtn.Text = "LOCK"
 LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 LockBtn.Font = Enum.Font.SourceSansBold
-LockBtn.TextSize = 10
+LockBtn.TextSize = 14
 Instance.new("UICorner", LockBtn).CornerRadius = UDim.new(1, 0)
 local LockStroke = Instance.new("UIStroke", LockBtn)
-LockStroke.Thickness = 1
-LockStroke.Color = Color3.fromRGB(55, 55, 55)
+LockStroke.Thickness = 2
+LockStroke.Color = Color3.fromRGB(70, 70, 70)
 MakeDraggable(LockBtn)
 
-local SpeedBtn = CreateLongBtn("SPEED", UDim2.new(0.85, -15, 0.33, 0))
-local FlyBtn = CreateLongBtn("FLY", UDim2.new(0.85, -15, 0.38, 0))
-local StompBtn = CreateLongBtn("STOMP", UDim2.new(0.85, -15, 0.43, 0))
-local HitboxBtn = CreateLongBtn("HITBOX", UDim2.new(0.85, -15, 0.48, 0))
-local RapidBtn = CreateLongBtn("RAPID", UDim2.new(0.85, -15, 0.53, 0))
+local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
+local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
+local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
+local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, RapidOn = nil, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -142,38 +149,66 @@ local function GetTarget()
     return Target
 end
 
+local function GetChestPos(p)
+    if p.Character:FindFirstChild("UpperTorso") then return p.Character.UpperTorso.Position
+    elseif p.Character:FindFirstChild("HumanoidRootPart") then return p.Character.HumanoidRootPart.Position
+    end
+    return nil
+end
+
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local T = GetTarget()
-        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable
-        else StrafeOn = false end
-    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom end
+        if T then 
+            LockedPlayer = T 
+            Camera.CameraType = Enum.CameraType.Scriptable
+            Notify("Lock ON: " .. T.Name)
+        else 
+            StrafeOn = false 
+        end
+    else 
+        LockedPlayer = nil 
+        Camera.CameraType = Enum.CameraType.Custom
+        Notify("Lock OFF")
+    end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
 StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
-RapidBtn.MouseButton1Click:Connect(function() RapidOn = not RapidOn RapidBtn.Text = RapidOn and "RAPID: ON" or "RAPID: OFF" end)
 
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
+local oldIndex = mt.__index
 setreadonly(mt, false)
 
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
     if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "UpdateMousePos" then
+        if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
             local T = GetTarget()
-            if T and T.Character and T.Character:FindFirstChild("Head") then
-                args[2] = T.Character.Head.Position
+            local Pos = T and GetChestPos(T)
+            if Pos then
+                args[2] = Pos
                 return oldNamecall(self, unpack(args))
             end
         end
     end
     return oldNamecall(self, ...)
+end)
+
+mt.__index = newcclosure(function(self, idx)
+    if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
+        local T = GetTarget()
+        local Pos = T and GetChestPos(T)
+        if Pos then
+            return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart)
+        end
+    end
+    return oldIndex(self, idx)
 end)
 
 setreadonly(mt, true)
@@ -187,11 +222,6 @@ RunService.RenderStepped:Connect(function()
     if Tool and Tool:FindFirstChild("Ammo") then
         if Tool.Ammo.Value == 0 then
             ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
-        end
-        if RapidOn and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
-            local T = GetTarget()
-            local Pos = T and T.Character and T.Character.Head.Position or Mouse.Hit.p
-            ReplicatedStorage.MainEvent:FireServer("Shoot", Pos)
         end
     end
 
@@ -209,10 +239,11 @@ RunService.RenderStepped:Connect(function()
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
+        local TChest = GetChestPos(LockedPlayer) or TRoot.Position
         Degree = Degree + 0.025
-        local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
-        Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
-        Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
+        local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
+        Root.CFrame = CFrame.new(TargetPos, TChest)
+        Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
     end
 
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
