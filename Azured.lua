@@ -2,24 +2,25 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
 local FovSize = 150
-local StompRange = 15 
+local StompRange = 25 
 local HitSize = 15
 local SpeedMultiplier = 3.5
 local Prediction = 0.135
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Revised_V140"
+ScreenGui.Name = "Azured_Nuke_Full_V160"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local function Notify(txt)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Azured System",
+    StarterGui:SetCore("SendNotification", {
+        Title = "Azured.gg",
         Text = txt,
         Duration = 2
     })
@@ -115,7 +116,7 @@ end
 local LockBtn = Instance.new("TextButton")
 LockBtn.Parent = ScreenGui
 LockBtn.Size = UDim2.new(0, 60, 0, 60)
-LockBtn.Position = UDim2.new(0.85, 0, 0.2, 0)
+LockBtn.Position = UDim2.new(0.85, 0, 0.02, 0)
 LockBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
 LockBtn.Text = "LOCK"
 LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -127,15 +128,106 @@ LockStroke.Thickness = 2
 LockStroke.Color = Color3.fromRGB(70, 70, 70)
 MakeDraggable(LockBtn)
 
-local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
-local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
-local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
-local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
+local AuraBtn = CreateBigBtn("KILL ALL", UDim2.new(0.85, -20, 0.12, 0))
+local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.2, 0))
+local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.28, 0))
+local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.36, 0))
+local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.44, 0))
 
-local LockedPlayer, LockOn, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false
+local LockedPlayer, LockOn, SpeedOn, FlyOn, HitOn, StompOn, AuraOn = nil, false, false, false, false, false, false
 local Degree = 0
 
-local function GetTarget()
+local function CreateESP(Player)
+    local Box = Instance.new("Frame")
+    local NameLabel = Instance.new("TextLabel")
+    local HealthLabel = Instance.new("TextLabel")
+    local ArmorLabelESP = Instance.new("TextLabel")
+    local DistanceLabel = Instance.new("TextLabel")
+    local StrokeESP = Instance.new("UIStroke")
+
+    Box.Name = Player.Name .. "_ESP"
+    Box.Parent = ScreenGui
+    Box.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Box.BackgroundTransparency = 1
+    Box.Visible = false
+
+    StrokeESP.Parent = Box
+    StrokeESP.Thickness = 1.5
+    StrokeESP.Color = Color3.fromRGB(255, 0, 200)
+
+    NameLabel.Parent = Box
+    NameLabel.Size = UDim2.new(1, 0, 0, 15)
+    NameLabel.Position = UDim2.new(0, 0, 0, -20)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NameLabel.TextSize = 12
+    NameLabel.Font = Enum.Font.SourceSansBold
+
+    HealthLabel.Parent = Box
+    HealthLabel.Size = UDim2.new(0, 30, 0, 15)
+    HealthLabel.Position = UDim2.new(0, -35, 0.5, -7)
+    HealthLabel.BackgroundTransparency = 1
+    HealthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    HealthLabel.TextSize = 12
+
+    ArmorLabelESP.Parent = Box
+    ArmorLabelESP.Size = UDim2.new(0, 30, 0, 15)
+    ArmorLabelESP.Position = UDim2.new(1, 5, 0.5, -7)
+    ArmorLabelESP.BackgroundTransparency = 1
+    ArmorLabelESP.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ArmorLabelESP.TextSize = 12
+
+    DistanceLabel.Parent = Box
+    DistanceLabel.Size = UDim2.new(1, 0, 0, 15)
+    DistanceLabel.Position = UDim2.new(0, 0, 1, 5)
+    DistanceLabel.BackgroundTransparency = 1
+    DistanceLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DistanceLabel.TextSize = 12
+
+    RunService.RenderStepped:Connect(function()
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and Player.Character:FindFirstChild("Humanoid") and Player ~= LocalPlayer then
+            local Root = Player.Character.HumanoidRootPart
+            local Hum = Player.Character.Humanoid
+            local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+
+            if OnScreen and Hum.Health > 0 then
+                local Size = (Camera:WorldToViewportPoint(Root.Position + Vector3.new(0, 3, 0)).Y - Camera:WorldToViewportPoint(Root.Position - Vector3.new(0, 3, 0)).Y)
+                Box.Size = UDim2.new(0, math.abs(Size) * 0.7, 0, math.abs(Size))
+                Box.Position = UDim2.new(0, Pos.X - Box.Size.X.Offset / 2, 0, Pos.Y - Box.Size.Y.Offset / 2)
+                Box.Visible = true
+                NameLabel.Text = Player.DisplayName .. " | " .. Player.Name
+                HealthLabel.Text = math.floor(Hum.Health)
+                local Armor = Player.Character:FindFirstChild("BodyArmor") and 100 or 0
+                ArmorLabelESP.Text = tostring(Armor)
+                local Dist = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - Root.Position).Magnitude)
+                DistanceLabel.Text = Dist .. " studs"
+            else
+                Box.Visible = false
+            end
+        else
+            Box.Visible = false
+        end
+    end)
+end
+
+Players.PlayerAdded:Connect(CreateESP)
+for _, v in pairs(Players:GetPlayers()) do CreateESP(v) end
+
+local function GetServerTarget()
+    local BestTarget = nil
+    local Dist = math.huge
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") then
+            if v.Character.Humanoid.Health > 0 then
+                local d = (LocalPlayer.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                if d < Dist then Dist = d BestTarget = v end
+            end
+        end
+    end
+    return BestTarget
+end
+
+local function GetFovTarget()
     local Target, MinDist = nil, FovSize
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     for _, v in pairs(Players:GetPlayers()) do
@@ -161,22 +253,19 @@ local function GetChestPos(p)
     return nil
 end
 
+AuraBtn.MouseButton1Click:Connect(function() 
+    AuraOn = not AuraOn 
+    AuraBtn.Text = AuraOn and "KILL ALL: ON" or "KILL ALL: OFF"
+    AuraBtn.BackgroundColor3 = AuraOn and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(5, 5, 5)
+end)
+
 LockBtn.MouseButton1Click:Connect(function()
     LockOn = not LockOn
     if LockOn then
-        local T = GetTarget()
-        if T then 
-            LockedPlayer = T 
-            LockStroke.Color = Color3.fromRGB(0, 255, 0)
-            Notify("Locked: " .. T.Name)
-        else 
-            LockOn = false 
-        end
-    else 
-        LockedPlayer = nil 
-        LockStroke.Color = Color3.fromRGB(70, 70, 70)
-        Notify("Unlocked")
-    end
+        local T = GetFovTarget()
+        if T then LockedPlayer = T LockStroke.Color = Color3.fromRGB(0, 255, 0) Notify("Locked: " .. T.Name)
+        else LockOn = false end
+    else LockedPlayer = nil LockStroke.Color = Color3.fromRGB(70, 70, 70) Notify("Unlocked") end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
@@ -193,9 +282,9 @@ mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
     if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
-            local T = (LockOn and LockedPlayer) or GetTarget()
-            local Pos = GetChestPos(T)
+        if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
+            local CurrentT = (AuraOn and GetServerTarget()) or (LockOn and LockedPlayer) or GetFovTarget()
+            local Pos = GetChestPos(CurrentT)
             if Pos then args[2] = Pos return oldNamecall(self, unpack(args)) end
         end
     end
@@ -204,9 +293,9 @@ end)
 
 mt.__index = newcclosure(function(self, idx)
     if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
-        local T = (LockOn and LockedPlayer) or GetTarget()
-        local Pos = GetChestPos(T)
-        if Pos then return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart) end
+        local CurrentT = (AuraOn and GetServerTarget()) or (LockOn and LockedPlayer) or GetFovTarget()
+        local Pos = GetChestPos(CurrentT)
+        if Pos then return (idx == "Hit" and CFrame.new(Pos) or CurrentT.Character:FindFirstChild("UpperTorso") or CurrentT.Character.HumanoidRootPart) end
     end
     return oldIndex(self, idx)
 end)
@@ -222,44 +311,51 @@ RunService.RenderStepped:Connect(function()
         ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
     end
 
-    local GlobalTarget = (LockOn and LockedPlayer) or GetTarget()
+    local GlobalTarget = (AuraOn and GetServerTarget()) or (LockOn and LockedPlayer)
 
     if GlobalTarget and GlobalTarget.Character and GlobalTarget.Character:FindFirstChild("Humanoid") then
         local targetHum = GlobalTarget.Character.Humanoid
+        local TRoot = GlobalTarget.Character:FindFirstChild("HumanoidRootPart")
         TargetUI.Visible = true
-        TargetName.Text = GlobalTarget.Name
+        TargetName.Text = (AuraOn and "AURA: " or "LOCK: ") .. GlobalTarget.Name
         HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
-        local armorVal = GlobalTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
-        ArmorLabel.Text = "Armor: " .. armorVal
+        local armorV = GlobalTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
+        ArmorLabel.Text = "Armor: " .. armorV
         
-        if LockOn and targetHum.Health > 0 then
+        if AuraOn and TRoot then
+            if targetHum.Health > 15 then
+                Degree = Degree + 0.07
+                local OrbitPos = TRoot.Position + Vector3.new(math.sin(Degree) * 12, 7, math.cos(Degree) * 12)
+                Root.CFrame = CFrame.new(OrbitPos, TRoot.Position)
+                Root.Velocity = Vector3.new(0, 0, 0)
+                if Tool then Tool:Activate() end
+            else
+                Root.CFrame = TRoot.CFrame * CFrame.new(0, 1.5, 0)
+                Root.Velocity = Vector3.new(0, 0, 0)
+                ReplicatedStorage.MainEvent:FireServer("Stomp")
+            end
+        elseif LockOn and targetHum.Health > 15 then
             if Tool then Tool:Activate() end
-        end
-        
-        if targetHum.Health <= 0 and LockOn then
-            LockedPlayer = nil
-            LockOn = false
-            LockStroke.Color = Color3.fromRGB(70, 70, 70)
         end
     else
         TargetUI.Visible = false
     end
 
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then 
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 and not AuraOn then 
         Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) 
     end
-    
-    if FlyOn then 
+    if FlyOn and not AuraOn then 
         Root.Velocity = Vector3.new(0, 0, 0) 
         Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) 
     end
 
-    if StompOn then
+    if StompOn and not AuraOn then
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                 local eRoot = v.Character.HumanoidRootPart
                 local eHum = v.Character:FindFirstChild("Humanoid")
                 if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then
+                    Root.CFrame = eRoot.CFrame * CFrame.new(0, 1.5, 0)
                     ReplicatedStorage.MainEvent:FireServer("Stomp")
                 end
             end
