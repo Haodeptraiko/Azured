@@ -10,23 +10,11 @@ local Mouse = LocalPlayer:GetMouse()
 local FovSize = 300
 local StompRange = 40
 local AttackDistance = 75
-local SelectedGun = "rifle"
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_V21"
+ScreenGui.Name = "Azured_Mobile_V22"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
-
-local FovCircle = Instance.new("Frame")
-FovCircle.Parent = ScreenGui
-FovCircle.Size = UDim2.new(0, FovSize, 0, FovSize)
-FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-FovCircle.BackgroundTransparency = 1
-local StrokeFOV = Instance.new("UIStroke", FovCircle)
-StrokeFOV.Thickness = 2
-StrokeFOV.Color = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
 
 local function Notify(text, color)
     local NotifyLabel = Instance.new("TextLabel")
@@ -114,32 +102,30 @@ MainFrame.BackgroundTransparency = 0.3
 Instance.new("UICorner", MainFrame)
 MakeDraggable(MainFrame)
 
-local Content = Instance.new("Frame")
-Content.Parent = MainFrame
-Content.Size = UDim2.new(1, 0, 1, -10)
-Content.Position = UDim2.new(0, 0, 0, 5)
-Content.BackgroundTransparency = 1
+local SpeedBtn = Instance.new("TextButton", MainFrame)
+SpeedBtn.Size = UDim2.new(1, -10, 0, 30)
+SpeedBtn.Position = UDim2.new(0, 5, 0, 5)
+SpeedBtn.Text = "SPEED"
+SpeedBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 
-local function CreateMenuBtn(name, pos)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = Content
-    Btn.Size = UDim2.new(1, -10, 0, 30)
-    Btn.Position = pos
-    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Btn.Text = name
-    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Btn.Font = Enum.Font.Gotham
-    Btn.TextSize = 10
-    Instance.new("UICorner", Btn)
-    return Btn
-end
+local FlyBtn = Instance.new("TextButton", MainFrame)
+FlyBtn.Size = UDim2.new(1, -10, 0, 30)
+FlyBtn.Position = UDim2.new(0, 5, 0, 40)
+FlyBtn.Text = "FLY"
+FlyBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 
-local SpeedBtn = CreateMenuBtn("SPEED", UDim2.new(0, 5, 0, 5))
-local FlyBtn = CreateMenuBtn("FLY", UDim2.new(0, 5, 0, 40))
-local HitboxBtn = CreateMenuBtn("HITBOX", UDim2.new(0, 5, 0, 75))
-local EspBtn = CreateMenuBtn("ESP", UDim2.new(0, 5, 0, 110))
+local HitboxBtn = Instance.new("TextButton", MainFrame)
+HitboxBtn.Size = UDim2.new(1, -10, 0, 30)
+HitboxBtn.Position = UDim2.new(0, 5, 0, 75)
+HitboxBtn.Text = "HITBOX"
+HitboxBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 
-local HitSize = 15
+local EspBtn = Instance.new("TextButton", MainFrame)
+EspBtn.Size = UDim2.new(1, -10, 0, 30)
+EspBtn.Position = UDim2.new(0, 5, 0, 110)
+EspBtn.Text = "ESP"
+EspBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+
 local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, EspOn, StompOn, GKillOn = nil, false, false, false, false, false, false, false
 local LastStrafe = 0
 
@@ -174,100 +160,69 @@ LockBtn.MouseButton1Click:Connect(function()
     else LockedPlayer = nil LockStroke.Color = Color3.fromRGB(0, 255, 0) Camera.CameraType = Enum.CameraType.Custom end
 end)
 
-StompBtn.MouseButton1Click:Connect(function()
-    StompOn = not StompOn
-    StompBtn.Text = StompOn and "AUTO STOMP: ON" or "AUTO STOMP: OFF"
-    StompStroke.Color = StompOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(50, 50, 50)
-end)
-
-GKillBtn.MouseButton1Click:Connect(function()
-    GKillOn = not GKillOn
-    GKillBtn.Text = GKillOn and "GKILL: ON" or "GKILL: OFF"
-    GKillStroke.Color = GKillOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(50, 50, 50)
-end)
-
+StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "AUTO STOMP: ON" or "AUTO STOMP: OFF" end)
+GKillBtn.MouseButton1Click:Connect(function() GKillOn = not GKillOn GKillBtn.Text = GKillOn and "GKILL: ON" or "GKILL: OFF" end)
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.TextColor3 = SpeedOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.TextColor3 = FlyOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.TextColor3 = HitOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.TextColor3 = EspOn and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200) end)
 
-local mt = getrawmetatable(game)
-local oldIndex, oldNamecall = mt.__index, mt.__namecall
-setreadonly(mt, false)
-mt.__index = newcclosure(function(t, k)
-    if t == Mouse and (k == "Hit" or k == "Target") then
-        local Target = GetTarget()
-        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
-            if k == "Hit" then return Target.Character.Head.CFrame end
-            if k == "Target" then return Target.Character.Head end
-        end
-    end
-    return oldIndex(t, k)
-end)
-mt.__namecall = newcclosure(function(self, ...)
-    local args = {...}
-    local method = getnamecallmethod()
-    if method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
-            local Target = GetTarget()
-            if Target and Target.Character and Target.Character:FindFirstChild("Head") then
-                args[2] = Target.Character.Head.Position
-                return oldNamecall(self, unpack(args))
-            end
-        end
-    end
-    return oldNamecall(self, ...)
-end)
-setreadonly(mt, true)
-
-RunService.RenderStepped:Connect(function()
+RunService.Heartbeat:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-    
-    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local TRoot = LockedPlayer.Character.HumanoidRootPart
-        if tick() - LastStrafe > 0.1 then
-            Root.CFrame = CFrame.new(TRoot.Position + Vector3.new(math.random(-12, 12), math.random(2, 10), math.random(-12, 12)), TRoot.Position)
-            LastStrafe = tick()
-        end
-        Camera.CFrame = CFrame.new(Root.Position + Vector3.new(0, 2, 0), TRoot.Position)
-    end
-    
-    if StompOn or GKillOn then
+    local Root = Char.HumanoidRootPart
+    local Hum = Char:FindFirstChild("Humanoid")
+
+    -- Logic GKILL & STOMP
+    if GKillOn or StompOn then
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                 local eRoot = v.Character.HumanoidRootPart
                 local eHum = v.Character:FindFirstChild("Humanoid")
-                local Distance = (Root.Position - eRoot.Position).Magnitude
-                
-                if eHum and eHum.Health <= 15 and Distance <= StompRange then
+                local Dist = (Root.Position - eRoot.Position).Magnitude
+
+                if eHum and eHum.Health <= 15 and Dist <= StompRange then
                     Root.CFrame = eRoot.CFrame * CFrame.new(0, 2, 0)
-                    if PunchEvent then PunchEvent:FireServer(v.Character) elseif MainEvent then MainEvent:FireServer("Stomp") end
-                    break
-                elseif GKillOn and eHum and eHum.Health > 15 and Distance <= AttackDistance then
-                    if ShootEvent then ShootEvent:FireServer(v.Character, SelectedGun) elseif MainEvent then MainEvent:FireServer("Shoot", eRoot.Position) end
+                    if MainEvent then MainEvent:FireServer("Stomp") end
+                    if PunchEvent then PunchEvent:FireServer(v.Character) end
+                elseif GKillOn and eHum and eHum.Health > 15 and Dist <= AttackDistance then
+                    if MainEvent then MainEvent:FireServer("Shoot", eRoot.Position) end
+                    if ShootEvent then ShootEvent:FireServer(v.Character, "rifle") end
                 end
             end
         end
     end
 
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
-    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+    -- Speed & Fly
+    if SpeedOn and Hum and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 1.5) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 2.5) end
+    
+    -- Strafe Lock
+    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local TRoot = LockedPlayer.Character.HumanoidRootPart
+        if tick() - LastStrafe > 0.1 then
+            Root.CFrame = CFrame.new(TRoot.Position + Vector3.new(math.random(-12, 12), math.random(5, 10), math.random(-12, 12)), TRoot.Position)
+            LastStrafe = tick()
+        end
+        Camera.CFrame = CFrame.new(Root.Position + Vector3.new(0, 2, 0), TRoot.Position)
+    end
+end)
 
+RunService.RenderStepped:Connect(function()
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character then
-            local pRoot = v.Character:FindFirstChild("HumanoidRootPart")
-            if EspOn and pRoot then
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local pRoot = v.Character.HumanoidRootPart
+            if EspOn then
                 local Tag = pRoot:FindFirstChild("EspTag") or Instance.new("BillboardGui", pRoot)
                 Tag.Name = "EspTag" Tag.Size = UDim2.new(4, 0, 2, 0) Tag.AlwaysOnTop = true
                 local L = Tag:FindFirstChild("TextLabel") or Instance.new("TextLabel", Tag)
                 L.Name = "TextLabel" L.Size = UDim2.new(1, 0, 1, 0) L.BackgroundTransparency = 1 L.TextSize = 12 L.Font = Enum.Font.GothamBold
-                local HP = v.Character.Humanoid and math.floor(v.Character.Humanoid.Health) or 0
-                L.Text = v.Name .. "\nHP: " .. HP L.TextColor3 = Color3.fromRGB(255, 0, 0):lerp(Color3.fromRGB(0, 255, 0), HP/100)
-            elseif pRoot and pRoot:FindFirstChild("EspTag") then pRoot.EspTag:Destroy() end
-            if HitOn and pRoot then pRoot.Size = Vector3.new(HitSize, HitSize, HitSize) pRoot.Transparency = 0.7 pRoot.CanCollide = false
-            elseif pRoot then pRoot.Size = Vector3.new(2, 2, 1) pRoot.Transparency = 1 end
+                L.Text = v.Name .. " [" .. math.floor(v.Character.Humanoid.Health) .. "]"
+                L.TextColor3 = Color3.fromRGB(255, 255, 255)
+            elseif pRoot:FindFirstChild("EspTag") then pRoot.EspTag:Destroy() end
+            
+            if HitOn then pRoot.Size = Vector3.new(15, 15, 15) pRoot.Transparency = 0.8 pRoot.CanCollide = false
+            else pRoot.Size = Vector3.new(2, 2, 1) pRoot.Transparency = 1 end
         end
     end
 end)
