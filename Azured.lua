@@ -5,30 +5,33 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-local OpenBtn = Instance.new("ScreenGui")
-local MainBtn = Instance.new("TextButton")
+local MobileGui = Instance.new("ScreenGui")
+local ToggleBtn = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
 
-OpenBtn.Name = "OpenBtn"
-OpenBtn.Parent = LocalPlayer:WaitForChild("PlayerGui")
-OpenBtn.ResetOnSpawn = false
+MobileGui.Name = "MobileGui"
+MobileGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+MobileGui.ResetOnSpawn = false
 
-MainBtn.Name = "MainBtn"
-MainBtn.Parent = OpenBtn
-MainBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainBtn.Position = UDim2.new(0.02, 0, 0.4, 0)
-MainBtn.Size = UDim2.new(0, 50, 0, 50)
-MainBtn.Font = Enum.Font.SourceSansBold
-MainBtn.Text = "MENU"
-MainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MainBtn.TextSize = 12
-MainBtn.Draggable = true
+ToggleBtn.Name = "ToggleBtn"
+ToggleBtn.Parent = MobileGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
+ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.Text = "AZURED"
+ToggleBtn.TextColor3 = Color3.fromRGB(0, 255, 150)
+ToggleBtn.TextSize = 14
+ToggleBtn.Active = true
+ToggleBtn.Draggable = true
 
 UICorner.CornerRadius = UDim.new(1, 0)
-UICorner.Parent = MainBtn
+UICorner.Parent = ToggleBtn
 
-MainBtn.MouseButton1Click:Connect(function()
-    library:Close()
+ToggleBtn.MouseButton1Click:Connect(function()
+    if library then
+        library:Close()
+    end
 end)
 
 local function GetTarget(fov)
@@ -86,43 +89,24 @@ mt.__index = newcclosure(function(self, idx)
 end)
 setreadonly(mt, true)
 
-local LegitTab = library:AddTab("Legit"); 
+local LegitTab = library:AddTab("Mobile Legit"); 
 local LegitColunm1 = LegitTab:AddColumn();
 local LegitMain = LegitColunm1:AddSection("Aim Assist")
-LegitMain:AddDivider("Main");
-LegitMain:AddToggle{text = "Enabled", flag = "AimbotEnabled"}
-LegitMain:AddSlider{text = "Aimbot FOV", flag = "AimbotFov", min = 0, max = 750, value = 105}
-LegitMain:AddList({text = "Hit Box", flag = "AimbotHitbox", value = "Head", values = {"Head", "Torso"}});
-LegitMain:AddDivider("Draw Fov");
-local FovCircle = Drawing.new("Circle")
-FovCircle.Visible = false
-FovCircle.Thickness = 1
-LegitMain:AddToggle{text = "Enabled", flag = "CircleEnabled", callback = function(v) FovCircle.Visible = v end}:AddColor({flag = "CircleColor", color = Color3.new(1, 1, 1)});
+LegitMain:AddToggle{text = "Silent Aim", flag = "SilentAimEnabled"}
+LegitMain:AddSlider{text = "Silent FOV", flag = "SilentAimFOV", min = 0, max = 500, value = 150}
+LegitMain:AddList({text = "Target Part", flag = "SilentAimHitbox", value = "Torso", values = {"Head", "Torso"}});
 
-local LegitSecond = LegitColunm1:AddSection("Extend Hitbox")
-LegitSecond:AddDivider("Main");
-LegitSecond:AddToggle{text = "Enabled", flag = "HitboxEnabled"}
-LegitSecond:AddSlider{text = "Extend Rate", flag = "ExtendRate", min = 0, max = 15, value = 10}
-
-local LegitColunm2 = LegitTab:AddColumn();
-local LegitForth = LegitColunm2:AddSection("Bullet Redirection")
-LegitForth:AddDivider("Main");
-LegitForth:AddToggle{text = "Enabled", flag = "SilentAimEnabled"}
-LegitForth:AddSlider{text = "Silent Aim FOV", flag = "SilentAimFOV", min = 0, max = 750, value = 150}
-LegitForth:AddList({text = "Hit Box", flag = "SilentAimHitbox", value = "Torso", values = {"Head", "Torso"}});
+local LegitSecond = LegitColunm1:AddSection("Hitbox")
+LegitSecond:AddToggle{text = "Extend Hitbox", flag = "HitboxEnabled"}
+LegitSecond:AddSlider{text = "Size", flag = "ExtendRate", min = 0, max = 20, value = 10}
 
 local VisualsTab = library:AddTab("Visuals"); 
-local VisualsColunm2 = VisualsTab:AddColumn();
-local VisualsSecond = VisualsColunm2:AddSection("Camera Visuals")
-VisualsSecond:AddToggle{text = "Change Camera FOV", flag = "ChangeCameraFOV"}
-VisualsSecond:AddSlider{text = "Camera FOV", flag = "CameraFOV", min = 10, max = 120, value = 120}
+local VisualsColunm = VisualsTab:AddColumn();
+local VisualsMain = VisualsColunm:AddSection("Camera")
+VisualsMain:AddToggle{text = "Custom FOV", flag = "ChangeCameraFOV"}
+VisualsMain:AddSlider{text = "FOV Value", flag = "CameraFOV", min = 70, max = 120, value = 100}
 
 RunService.RenderStepped:Connect(function()
-    if library.flags["CircleEnabled"] then
-        FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-        FovCircle.Radius = library.flags["AimbotFov"]
-        FovCircle.Color = library.flags["CircleColor"]
-    end
     if library.flags["ChangeCameraFOV"] then
         Camera.FieldOfView = library.flags["CameraFOV"]
     end
