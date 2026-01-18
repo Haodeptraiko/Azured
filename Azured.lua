@@ -12,9 +12,49 @@ local StompRange = 15
 local HitSize = 15
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Final_V29"
+ScreenGui.Name = "Azured_Final_V31"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local TargetUI = Instance.new("Frame")
+TargetUI.Name = "TargetUI"
+TargetUI.Parent = ScreenGui
+TargetUI.Size = UDim2.new(0, 200, 0, 70)
+TargetUI.Position = UDim2.new(0.5, -100, 0.7, 0)
+TargetUI.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+TargetUI.BackgroundTransparency = 0.2
+TargetUI.Visible = false
+Instance.new("UICorner", TargetUI)
+
+local TargetName = Instance.new("TextLabel")
+TargetName.Parent = TargetUI
+TargetName.Size = UDim2.new(1, 0, 0, 25)
+TargetName.BackgroundTransparency = 1
+TargetName.Text = "None"
+TargetName.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetName.Font = Enum.Font.GothamBold
+TargetName.TextSize = 14
+
+local HealthBarBack = Instance.new("Frame")
+HealthBarBack.Parent = TargetUI
+HealthBarBack.Position = UDim2.new(0.1, 0, 0.4, 0)
+HealthBarBack.Size = UDim2.new(0.8, 0, 0, 15)
+HealthBarBack.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+
+local HealthBarMain = Instance.new("Frame")
+HealthBarMain.Parent = HealthBarBack
+HealthBarMain.Size = UDim2.new(1, 0, 1, 0)
+HealthBarMain.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+
+local ArmorLabel = Instance.new("TextLabel")
+ArmorLabel.Parent = TargetUI
+ArmorLabel.Position = UDim2.new(0, 0, 0.65, 0)
+ArmorLabel.Size = UDim2.new(1, 0, 0, 20)
+ArmorLabel.BackgroundTransparency = 1
+ArmorLabel.Text = "Armor: 0"
+ArmorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ArmorLabel.Font = Enum.Font.Gotham
+ArmorLabel.TextSize = 12
 
 local FovCircle = Instance.new("Frame")
 FovCircle.Parent = ScreenGui
@@ -103,29 +143,6 @@ local function GetTarget()
     return Target
 end
 
-local function CreateTracer(TargetPos)
-    local Char = LocalPlayer.Character
-    if not Char then return end
-    local StartPart = Char:FindFirstChild("RightHand") or Char:FindFirstChild("Right Arm") or Char:FindFirstChild("HumanoidRootPart")
-    local StartPos = StartPart.Position
-    
-    local Part = Instance.new("Part")
-    Part.Name = "AzuredTracer"
-    Part.Parent = workspace
-    Part.Anchored = true
-    Part.CanCollide = false
-    Part.Material = Enum.Material.Neon
-    Part.Color = Color3.fromRGB(0, 180, 255)
-    Part.Transparency = 0
-    
-    local Dist = (StartPos - TargetPos).Magnitude
-    Part.Size = Vector3.new(0.15, 0.15, Dist)
-    Part.CFrame = CFrame.new(StartPos, TargetPos) * CFrame.new(0, 0, -Dist/2)
-    
-    TweenService:Create(Part, TweenInfo.new(0.4), {Transparency = 1, Size = Vector3.new(0, 0, Dist)}):Play()
-    task.delay(0.4, function() Part:Destroy() end)
-end
-
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
@@ -162,20 +179,10 @@ mt.__namecall = newcclosure(function(self, ...)
     if method == "FireServer" and self.Name == "MainEvent" then
         if args[1] == "Shoot" or args[1] == "UpdateMousePos" then
             local T = GetTarget()
-            local TargetPosition
-            
             if T and T.Character and T.Character:FindFirstChild("Head") then
-                TargetPosition = T.Character.Head.Position
-                args[2] = TargetPosition
-            else
-                TargetPosition = Mouse.Hit.Position
+                args[2] = T.Character.Head.Position
+                return oldNamecall(self, unpack(args))
             end
-            
-            if args[1] == "Shoot" then
-                CreateTracer(TargetPosition)
-            end
-            
-            return oldNamecall(self, unpack(args))
         end
     end
     return oldNamecall(self, ...)
@@ -187,6 +194,18 @@ RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
+
+    local CurrentTarget = GetTarget()
+    if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
+        local targetHum = CurrentTarget.Character.Humanoid
+        TargetUI.Visible = true
+        TargetName.Text = CurrentTarget.Name
+        HealthBarMain.Size = UDim2.new(targetHum.Health / targetHum.MaxHealth, 0, 1, 0)
+        local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
+        ArmorLabel.Text = "Armor: " .. armorValue
+    else
+        TargetUI.Visible = false
+    end
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
@@ -205,8 +224,7 @@ RunService.RenderStepped:Connect(function()
                 local eRoot = v.Character.HumanoidRootPart
                 local eHum = v.Character:FindFirstChild("Humanoid")
                 if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then
-                    local ME = ReplicatedStorage:FindFirstChild("MainEvent")
-                    if ME then ME:FireServer("Stomp") end
+                    ReplicatedStorage.MainEvent:FireServer("Stomp")
                 end
             end
         end
@@ -218,6 +236,19 @@ RunService.RenderStepped:Connect(function()
             if pRoot then
                 if HitOn then pRoot.Size = Vector3.new(HitSize, HitSize, HitSize) pRoot.Transparency = 0.8 pRoot.CanCollide = false
                 else pRoot.Size = Vector3.new(2, 2, 1) pRoot.Transparency = 1 end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait() do
+        if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("Handle") then
+                local T = GetTarget()
+                local TargetPos = (T and T.Character and T.Character:FindFirstChild("Head")) and T.Character.Head.Position or Mouse.Hit.Position
+                ReplicatedStorage.MainEvent:FireServer("Shoot", TargetPos)
             end
         end
     end
