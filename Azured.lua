@@ -9,9 +9,10 @@ local Mouse = LocalPlayer:GetMouse()
 local FovSize = 150
 local StompRange = 15 
 local HitSize = 15
+local StickySmoothness = 0.15
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Final_V40"
+ScreenGui.Name = "Azured_Final_V42"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -120,8 +121,9 @@ local SpeedBtn = CreateLongBtn("SPEED", UDim2.new(0.85, -15, 0.33, 0))
 local FlyBtn = CreateLongBtn("FLY", UDim2.new(0.85, -15, 0.38, 0))
 local StompBtn = CreateLongBtn("STOMP", UDim2.new(0.85, -15, 0.43, 0))
 local HitboxBtn = CreateLongBtn("HITBOX", UDim2.new(0.85, -15, 0.48, 0))
+local RapidBtn = CreateLongBtn("RAPID", UDim2.new(0.85, -15, 0.53, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, RapidOn = nil, false, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -144,15 +146,15 @@ LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local T = GetTarget()
-        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable
-        else StrafeOn = false end
-    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom end
+        if T then LockedPlayer = T end
+    else LockedPlayer = nil end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
 StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
+RapidBtn.MouseButton1Click:Connect(function() RapidOn = not RapidOn RapidBtn.Text = RapidOn and "RAPID: ON" or "RAPID: OFF" end)
 
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
@@ -180,6 +182,15 @@ RunService.RenderStepped:Connect(function()
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
+    local Tool = Char:FindFirstChildOfClass("Tool")
+    if Tool and Tool:FindFirstChild("Ammo") and Tool.Ammo.Value == 0 then
+        ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
+    end
+
+    if RapidOn and Tool and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+        Tool:Activate()
+    end
+
     local CurrentTarget = GetTarget()
     if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
         local targetHum = CurrentTarget.Character.Humanoid
@@ -188,20 +199,24 @@ RunService.RenderStepped:Connect(function()
         HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
         local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
         ArmorLabel.Text = "Armor: " .. armorValue
+        
+        -- Sticky Aim Logic
+        if StrafeOn then
+            local TargetPos = CurrentTarget.Character.Head.Position
+            local MainPos = Camera:WorldToViewportPoint(TargetPos)
+            local MousePos = UserInputService:GetMouseLocation()
+            local TargetVec = Vector2.new(MainPos.X, MainPos.Y)
+            local SmoothPos = MousePos:Lerp(TargetVec, StickySmoothness)
+            
+            -- Muot ma di chuyen tam ngam
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TargetPos), StickySmoothness)
+        end
     else
         TargetUI.Visible = false
     end
 
-    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local TRoot = LockedPlayer.Character.HumanoidRootPart
-        Degree = Degree + 0.025
-        local TargetPos = TRoot.Position + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
-        Root.CFrame = CFrame.new(TargetPos, TRoot.Position)
-        Camera.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 5, 12), TRoot.Position)
-    end
-
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * 2.5) end
-    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+    if FlyOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
 
     if StompOn then
         for _, v in pairs(Players:GetPlayers()) do
