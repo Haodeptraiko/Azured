@@ -7,20 +7,20 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-local FovSize = 150
+local FovSize = 200
 local StompRange = 15 
 local HitSize = 15
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Final_V31"
+ScreenGui.Name = "Azured_Final_V33"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local TargetUI = Instance.new("Frame")
 TargetUI.Name = "TargetUI"
 TargetUI.Parent = ScreenGui
-TargetUI.Size = UDim2.new(0, 200, 0, 70)
-TargetUI.Position = UDim2.new(0.5, -100, 0.7, 0)
+TargetUI.Size = UDim2.new(0, 150, 0, 55)
+TargetUI.Position = UDim2.new(0.5, -75, 0.6, 0)
 TargetUI.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 TargetUI.BackgroundTransparency = 0.2
 TargetUI.Visible = false
@@ -28,17 +28,17 @@ Instance.new("UICorner", TargetUI)
 
 local TargetName = Instance.new("TextLabel")
 TargetName.Parent = TargetUI
-TargetName.Size = UDim2.new(1, 0, 0, 25)
+TargetName.Size = UDim2.new(1, 0, 0, 20)
 TargetName.BackgroundTransparency = 1
 TargetName.Text = "None"
 TargetName.TextColor3 = Color3.fromRGB(255, 255, 255)
 TargetName.Font = Enum.Font.GothamBold
-TargetName.TextSize = 14
+TargetName.TextSize = 12
 
 local HealthBarBack = Instance.new("Frame")
 HealthBarBack.Parent = TargetUI
-HealthBarBack.Position = UDim2.new(0.1, 0, 0.4, 0)
-HealthBarBack.Size = UDim2.new(0.8, 0, 0, 15)
+HealthBarBack.Position = UDim2.new(0.1, 0, 0.45, 0)
+HealthBarBack.Size = UDim2.new(0.8, 0, 0, 10)
 HealthBarBack.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
 
 local HealthBarMain = Instance.new("Frame")
@@ -49,12 +49,12 @@ HealthBarMain.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 local ArmorLabel = Instance.new("TextLabel")
 ArmorLabel.Parent = TargetUI
 ArmorLabel.Position = UDim2.new(0, 0, 0.65, 0)
-ArmorLabel.Size = UDim2.new(1, 0, 0, 20)
+ArmorLabel.Size = UDim2.new(1, 0, 0, 15)
 ArmorLabel.BackgroundTransparency = 1
 ArmorLabel.Text = "Armor: 0"
 ArmorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 ArmorLabel.Font = Enum.Font.Gotham
-ArmorLabel.TextSize = 12
+ArmorLabel.TextSize = 10
 
 local FovCircle = Instance.new("Frame")
 FovCircle.Parent = ScreenGui
@@ -249,6 +249,7 @@ task.spawn(function()
                 local T = GetTarget()
                 local TargetPos = (T and T.Character and T.Character:FindFirstChild("Head")) and T.Character.Head.Position or Mouse.Hit.Position
                 ReplicatedStorage.MainEvent:FireServer("Shoot", TargetPos)
+                ReplicatedStorage.MainEvent:FireServer("UpdateMousePos", TargetPos)
             end
         end
     end
