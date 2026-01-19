@@ -8,13 +8,14 @@ local Mouse = LocalPlayer:GetMouse()
 
 -- Variables
 local FovSize = 150
+local StompRange = 15 
 local SpeedMultiplier = 3.5
 local Degree = 0
-local LockedPlayer, StrafeOn, SilentOn, SpeedOn, FovShow = nil, false, false, false, false
+local LockedPlayer, StrafeOn, SilentOn, SpeedOn, FlyOn, StompOn, AntiStompOn, FovShow = nil, false, false, false, false, false, false, false
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_V3_NoRapid"
+ScreenGui.Name = "Azured_V3_Full_Fixed"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -73,6 +74,7 @@ end
 
 local CombatPage = CreatePage("Combat")
 local MovementPage = CreatePage("Movement")
+local MiscPage = CreatePage("Misc")
 
 local function SwitchTab(activePage)
     for _, p in pairs(Pages) do p.Visible = false end
@@ -98,6 +100,7 @@ end
 
 CreateTabBtn("Combat", CombatPage)
 CreateTabBtn("Movement", MovementPage)
+CreateTabBtn("Misc", MiscPage)
 SwitchTab(CombatPage)
 
 local function CreateSection(parent, name)
@@ -189,7 +192,7 @@ local function CreateSlider(parent, text, min, max, default, callback)
     end)
 end
 
--- Drawing FOV (Silent Aim Only)
+-- Drawing FOV
 local FovCircle = Drawing.new("Circle")
 FovCircle.Thickness = 1
 FovCircle.NumSides = 100
@@ -217,16 +220,17 @@ end
 
 local function GetChestPos(p)
     if not p or not p.Character then return nil end
-    local Char = p.Character
-    return Char:FindFirstChild("UpperTorso") and Char.UpperTorso.Position or Char:FindFirstChild("HumanoidRootPart") and Char.HumanoidRootPart.Position or nil
+    return p.Character:FindFirstChild("UpperTorso") and p.Character.UpperTorso.Position or p.Character.HumanoidRootPart.Position
 end
 
--- UI Sections
+-- Sections
 local AuraSec = CreateSection(CombatPage, "Aura Lock")
 local SilentSec = CreateSection(CombatPage, "Silent Aim")
-local FovSec = CreateSection(CombatPage, "FOV Settings (Silent)")
+local FovSec = CreateSection(CombatPage, "FOV Settings")
+local MoveSec = CreateSection(MovementPage, "Movement Mods")
+local MiscSec = CreateSection(MiscPage, "Miscellaneous")
 
--- Aura Tool Logic
+-- Combat Page
 local function GiveAuraTool()
     if LocalPlayer.Backpack:FindFirstChild("Aura") then return end
     local Tool = Instance.new("Tool")
@@ -239,43 +243,42 @@ local function GiveAuraTool()
     Tool.Activated:Connect(function()
         local T = Mouse.Target
         local Plr = T and T.Parent and Players:GetPlayerFromCharacter(T.Parent) or T and T.Parent.Parent and Players:GetPlayerFromCharacter(T.Parent.Parent)
-        if Plr and Plr ~= LocalPlayer then 
-            LockedPlayer = Plr; StrafeOn = true; Camera.CameraType = Enum.CameraType.Scriptable
-        else 
-            LockedPlayer = nil; StrafeOn = false; Camera.CameraType = Enum.CameraType.Custom 
-        end
+        if Plr and Plr ~= LocalPlayer then LockedPlayer = Plr; StrafeOn = true; Camera.CameraType = Enum.CameraType.Scriptable
+        else LockedPlayer = nil; StrafeOn = false; Camera.CameraType = Enum.CameraType.Custom end
     end)
 end
 
-local function CreateButton(parent, text, callback)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = parent
-    Btn.Size = UDim2.new(1, 0, 0, 35)
-    Btn.Text = text
-    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-    Btn.MouseButton1Click:Connect(callback)
-end
+local BtnAura = Instance.new("TextButton")
+BtnAura.Parent = AuraSec
+BtnAura.Size = UDim2.new(1, 0, 0, 35)
+BtnAura.Text = "Get Aura Tool"
+BtnAura.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+BtnAura.TextColor3 = Color3.fromRGB(230, 230, 230)
+Instance.new("UICorner", BtnAura).CornerRadius = UDim.new(0, 4)
+BtnAura.MouseButton1Click:Connect(GiveAuraTool)
 
--- Combat Page Content
-CreateButton(AuraSec, "Get Aura Tool", GiveAuraTool)
 CreateToggle(SilentSec, "Silent Aim", false, function(v) SilentOn = v end)
 CreateToggle(FovSec, "Show FOV Circle", false, function(v) FovShow = v FovCircle.Visible = v end)
 CreateSlider(FovSec, "FOV Radius", 50, 800, 150, function(v) FovSize = v FovCircle.Radius = v end)
 
-CreateToggle(MovementPage, "Speed Hack", false, function(v) SpeedOn = v end)
+-- Movement Page
+CreateToggle(MoveSec, "Speed Hack", false, function(v) SpeedOn = v end)
+CreateToggle(MoveSec, "Fly Mode", false, function(v) FlyOn = v end)
 
--- Main Loops
+-- Misc Page
+CreateToggle(MiscSec, "Auto Stomp", false, function(v) StompOn = v end)
+CreateToggle(MiscSec, "Anti Stomp", false, function(v) AntiStompOn = v end)
+
 ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
+-- Loops
 RunService.RenderStepped:Connect(function()
     FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-    local Root = Char.HumanoidRootPart
+    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
-    -- Aura Lock (Strafe) - Độc lập
+    -- Aura Lock (Strafe)
     if StrafeOn and LockedPlayer and LockedPlayer.Character then
         local TPos = GetChestPos(LockedPlayer)
         if TPos then
@@ -285,19 +288,43 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    if SpeedOn and Char.Humanoid.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Char.Humanoid.MoveDirection * SpeedMultiplier) end
+    -- Speed & Fly
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+
+    -- Auto Stomp
+    if StompOn then
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                if v.Character.Humanoid.Health <= 15 and (Root.Position - v.Character.HumanoidRootPart.Position).Magnitude <= StompRange then
+                    ReplicatedStorage.MainEvent:FireServer("Stomp")
+                end
+            end
+        end
+    end
+
+    -- Anti Stomp
+    if AntiStompOn and Hum.Health <= 15 then
+        Char:Destroy() -- Xóa character để không bị stomp
+    end
 end)
 
--- Metatable Hook (Silent Aim)
+-- Metatable Hook (Silent Aim & Anti-Stomp Event)
 local mt = getrawmetatable(game)
 local old = mt.__namecall
 setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
-    if not checkcaller() and getnamecallmethod() == "FireServer" and self.Name == "MainEvent" then
+    local method = getnamecallmethod()
+    if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
+        -- Silent Aim
         if (args[1] == "UpdateMousePos" or args[1] == "Shoot") and SilentOn then
             local ST = GetSilentTarget()
             if ST then args[2] = GetChestPos(ST) return old(self, unpack(args)) end
+        end
+        -- Anti Stomp (Ngăn gửi gói tin bị stomp lên server)
+        if args[1] == "Stomp" and AntiStompOn and LocalPlayer.Character and LocalPlayer.Character.Humanoid.Health <= 15 then
+            return nil
         end
     end
     return old(self, ...)
