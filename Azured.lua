@@ -129,8 +129,9 @@ local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
 local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
 local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
 local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
+local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiStompOn = nil, false, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -259,6 +260,10 @@ RunService.RenderStepped:Connect(function()
                 end
             end
         end
+    end
+    
+    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then
+        Root:Destroy()
     end
 
     for _, v in pairs(Players:GetPlayers()) do
