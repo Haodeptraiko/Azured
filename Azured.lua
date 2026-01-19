@@ -12,9 +12,212 @@ local HitSize = 15
 local SpeedMultiplier = 3.5
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_V110"
+ScreenGui.Name = "Azured_V3_Final"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+ToggleBtn.Position = UDim2.new(0.1, 0, 0.1, 0)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Text = "M"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 24
+ToggleBtn.Draggable = true
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 8)
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Position = UDim2.new(0.2, 0, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 550, 0, 350)
+MainFrame.Visible = false
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
+
+local Sidebar = Instance.new("Frame")
+Sidebar.Parent = MainFrame
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+Sidebar.Size = UDim2.new(0, 140, 1, 0)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 6)
+
+local Title = Instance.new("TextLabel")
+Title.Parent = Sidebar
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.BackgroundTransparency = 1
+Title.Text = "Azured"
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 22
+
+local TabContainer = Instance.new("Frame")
+TabContainer.Parent = Sidebar
+TabContainer.BackgroundTransparency = 1
+TabContainer.Position = UDim2.new(0, 0, 0, 60)
+TabContainer.Size = UDim2.new(1, 0, 1, -60)
+
+local ContentArea = Instance.new("Frame")
+ContentArea.Parent = MainFrame
+ContentArea.Position = UDim2.new(0, 150, 0, 10)
+ContentArea.Size = UDim2.new(0, 390, 0, 330)
+ContentArea.BackgroundTransparency = 1
+
+local Tabs, Pages = {}, {}
+
+local function CreatePage(name)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "Page"
+    Page.Parent = ContentArea
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.ScrollBarThickness = 2
+    Page.Visible = false
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
+    table.insert(Pages, Page)
+    return Page
+end
+
+local CombatPage = CreatePage("Combat")
+local MovementPage = CreatePage("Movement")
+local MiscPage = CreatePage("Misc")
+
+local function SwitchTab(activePage)
+    for _, p in pairs(Pages) do p.Visible = false end
+    activePage.Visible = true
+end
+
+local function CreateTabBtn(text, page)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = TabContainer
+    Btn.Size = UDim2.new(1, -20, 0, 35)
+    Btn.Position = UDim2.new(0, 10, 0, #Tabs * 40)
+    Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Btn.Text = text
+    Btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Btn.Font = Enum.Font.GothamSemibold
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
+    Btn.MouseButton1Click:Connect(function()
+        SwitchTab(page)
+        for _, b in pairs(Tabs) do b.BackgroundColor3 = Color3.fromRGB(30, 30, 30) end
+        Btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end)
+    table.insert(Tabs, Btn)
+end
+
+CreateTabBtn("Combat", CombatPage)
+CreateTabBtn("Movement", MovementPage)
+CreateTabBtn("Misc", MiscPage)
+SwitchTab(CombatPage)
+
+local function CreateSection(parent, name)
+    local SecFrame = Instance.new("Frame")
+    SecFrame.Parent = parent
+    SecFrame.Size = UDim2.new(1, -10, 0, 30)
+    SecFrame.BackgroundTransparency = 1
+    local SecLayout = Instance.new("UIListLayout", SecFrame)
+    SecLayout.Padding = UDim.new(0, 5)
+    
+    local SecTitle = Instance.new("TextLabel")
+    SecTitle.Parent = SecFrame
+    SecTitle.Size = UDim2.new(1, 0, 0, 20)
+    SecTitle.Text = "--- " .. name .. " ---"
+    SecTitle.TextColor3 = Color3.fromRGB(150, 150, 150)
+    SecTitle.BackgroundTransparency = 1
+    SecTitle.Font = Enum.Font.GothamBold
+    SecTitle.TextSize = 12
+    
+    local function UpdateSize()
+        SecFrame.Size = UDim2.new(1, -10, 0, SecLayout.AbsoluteContentSize.Y + 10)
+    end
+    SecLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSize)
+    
+    return SecFrame
+end
+
+local function CreateToggle(parent, text, default, callback)
+    local Frame = Instance.new("Frame")
+    Frame.Parent = parent
+    Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Frame.Size = UDim2.new(1, 0, 0, 35)
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 4)
+    
+    local Label = Instance.new("TextLabel")
+    Label.Parent = Frame
+    Label.Text = text
+    Label.Size = UDim2.new(0.7, 0, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = Frame
+    Btn.Size = UDim2.new(0, 35, 0, 18)
+    Btn.Position = UDim2.new(1, -45, 0.25, 0)
+    Btn.Text = ""
+    Btn.BackgroundColor3 = default and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(80, 80, 80)
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
+    
+    local state = default
+    Btn.MouseButton1Click:Connect(function()
+        state = not state
+        Btn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(80, 80, 80)
+        callback(state)
+    end)
+end
+
+local function CreateSlider(parent, text, min, max, default, callback)
+    local Frame = Instance.new("Frame")
+    Frame.Parent = parent
+    Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Frame.Size = UDim2.new(1, 0, 0, 45)
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 4)
+
+    local Label = Instance.new("TextLabel")
+    Label.Parent = Frame
+    Label.Text = text .. ": " .. default
+    Label.Size = UDim2.new(1, -20, 0, 20)
+    Label.Position = UDim2.new(0, 10, 0, 5)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local SliderBar = Instance.new("TextButton")
+    SliderBar.Parent = Frame
+    SliderBar.Size = UDim2.new(1, -20, 0, 4)
+    SliderBar.Position = UDim2.new(0, 10, 0, 30)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    SliderBar.Text = ""
+
+    local Indicator = Instance.new("Frame")
+    Indicator.Parent = SliderBar
+    Indicator.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    Indicator.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+
+    local function UpdateSlider()
+        local mousePos = UserInputService:GetMouseLocation().X
+        local barPos = SliderBar.AbsolutePosition.X
+        local barSize = SliderBar.AbsoluteSize.X
+        local percent = math.clamp((mousePos - barPos) / barSize, 0, 1)
+        local val = math.floor(min + (max - min) * percent)
+        Indicator.Size = UDim2.new(percent, 0, 1, 0)
+        Label.Text = text .. ": " .. val
+        callback(val)
+    end
+
+    SliderBar.MouseButton1Down:Connect(function()
+        local MoveConn, UpConn
+        MoveConn = RunService.RenderStepped:Connect(UpdateSlider)
+        UpConn = UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                MoveConn:Disconnect()
+                UpConn:Disconnect()
+            end
+        end)
+    end)
+end
 
 local FovCircle = Drawing.new("Circle")
 FovCircle.Thickness = 1
@@ -22,172 +225,83 @@ FovCircle.NumSides = 100
 FovCircle.Radius = FovSize
 FovCircle.Filled = false
 FovCircle.Color = Color3.fromRGB(255, 255, 255)
-FovCircle.Visible = true
+FovCircle.Visible = false
 
-local TargetName = Drawing.new("Text")
-TargetName.Size = 18
-TargetName.Outline = true
-TargetName.Color = Color3.fromRGB(255, 255, 255)
-TargetName.Visible = false
-
-local TargetHP = Drawing.new("Text")
-TargetHP.Size = 16
-TargetHP.Outline = true
-TargetHP.Color = Color3.fromRGB(180, 0, 255)
-TargetHP.Visible = false
-
-local TargetArmor = Drawing.new("Text")
-TargetArmor.Size = 16
-TargetArmor.Outline = true
-TargetArmor.Color = Color3.fromRGB(0, 50, 200)
-TargetArmor.Visible = false
-
-local function Notify(txt)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Azured Mobile",
-        Text = txt,
-        Duration = 2
-    })
-end
-
-local function MakeDraggable(obj)
-    local Dragging, DragInput, DragStart, StartPos
-    obj.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true DragStart = input.Position StartPos = obj.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then Dragging = false end end)
-        end
-    end)
-    obj.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
-            local Delta = input.Position - DragStart
-            obj.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
-        end
-    end)
-end
-
-local function CreateBigBtn(text, pos)
-    local Btn = Instance.new("TextButton")
-    Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 110, 0, 40)
-    Btn.Position = pos
-    Btn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
-    Btn.Text = text .. ": OFF"
-    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Btn.Font = Enum.Font.SourceSansBold
-    Btn.TextSize = 14
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
-    local S = Instance.new("UIStroke", Btn)
-    S.Thickness = 2
-    S.Color = Color3.fromRGB(60, 60, 60)
-    MakeDraggable(Btn)
-    return Btn
-end
-
-local LockBtn = Instance.new("TextButton")
-LockBtn.Parent = ScreenGui
-LockBtn.Size = UDim2.new(0, 60, 0, 60)
-LockBtn.Position = UDim2.new(0.85, 0, 0.2, 0)
-LockBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
-LockBtn.Text = "LOCK"
-LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-LockBtn.Font = Enum.Font.SourceSansBold
-LockBtn.TextSize = 14
-Instance.new("UICorner", LockBtn).CornerRadius = UDim.new(1, 0)
-local LockStroke = Instance.new("UIStroke", LockBtn)
-LockStroke.Thickness = 2
-LockStroke.Color = Color3.fromRGB(70, 70, 70)
-MakeDraggable(LockBtn)
-
-local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
-local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
-local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
-local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
-local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
-local RapidBtn = CreateBigBtn("RAPID FIRE", UDim2.new(0.85, -20, 0.72, 0))
-
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, RapidOn, Shooting = nil, false, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, RapidOn, Shooting, FovShow = nil, false, false, false, false, false, false, false, false
 local Degree = 0
 
-UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Shooting = true end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Shooting = false end
-end)
+ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
-local function GetTarget()
-    local Target, MinDist = nil, FovSize
-    local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local Hum = v.Character:FindFirstChild("Humanoid")
-            if Hum and Hum.Health > 0 then
-                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
-                if OnScreen and Dist < MinDist then MinDist = Dist; Target = v end
-            end
-        end
-    end
-    return Target
-end
-
-local function GetChestPos(p)
-    if p.Character:FindFirstChild("UpperTorso") then return p.Character.UpperTorso.Position
-    elseif p.Character:FindFirstChild("HumanoidRootPart") then return p.Character.HumanoidRootPart.Position
+local function GetPlayerFromMouse()
+    local Target = Mouse.Target
+    if Target and Target.Parent then
+        local Char = Target.Parent:FindFirstChild("Humanoid") and Target.Parent or Target.Parent.Parent:FindFirstChild("Humanoid") and Target.Parent.Parent
+        if Char then return Players:GetPlayerFromCharacter(Char) end
     end
     return nil
 end
 
-AntiStompBtn.MouseButton1Click:Connect(function()
-    if LocalPlayer.Character then
-        for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
-            if obj:IsA("BasePart") then obj:Destroy() end
+local function GiveAuraTool()
+    if LocalPlayer.Backpack:FindFirstChild("Aura") or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Aura")) then return end
+    local Tool = Instance.new("Tool")
+    Tool.Name = "Aura"
+    Tool.RequiresHandle = true
+    local Handle = Instance.new("Part")
+    Handle.Name = "Handle"
+    Handle.Size = Vector3.new(1, 1, 1)
+    Handle.Transparency = 0.5
+    Handle.Color = Color3.fromRGB(170, 0, 255)
+    Handle.Parent = Tool
+    Tool.Parent = LocalPlayer.Backpack
+    Tool.Activated:Connect(function()
+        local Plr = GetPlayerFromMouse()
+        if Plr and Plr ~= LocalPlayer then
+            LockedPlayer = Plr; StrafeOn = true; FovCircle.Visible = FovShow
+            Camera.CameraType = Enum.CameraType.Scriptable
+        else
+            LockedPlayer = nil; StrafeOn = false; FovCircle.Visible = false
+            Camera.CameraType = Enum.CameraType.Custom
         end
-        Notify("Anti Stomp: Character Destroyed")
-    end
-end)
+    end)
+end
 
-LockBtn.MouseButton1Click:Connect(function()
-    StrafeOn = not StrafeOn
-    if StrafeOn then
-        local T = GetTarget()
-        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Lock ON")
-        else StrafeOn = false end
-    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
-end)
+local AuraSec = CreateSection(CombatPage, "Aura")
+local SilentSec = CreateSection(CombatPage, "Silent")
+local FovSec = CreateSection(CombatPage, "Fov")
 
-SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
-FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
-StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
-HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
-RapidBtn.MouseButton1Click:Connect(function() RapidOn = not RapidOn RapidBtn.Text = RapidOn and "RAPID FIRE: ON" or "RAPID FIRE: OFF" end)
+local function CreateButton(parent, text, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = parent
+    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Btn.Size = UDim2.new(1, 0, 0, 35)
+    Btn.Text = text
+    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
+    Btn.MouseButton1Click:Connect(callback)
+end
+
+CreateButton(AuraSec, "Get Aura Tool", GiveAuraTool)
+CreateToggle(SilentSec, "Rapid Fire 100x", false, function(v) RapidOn = v end)
+CreateToggle(SilentSec, "Hitbox Large", false, function(v) HitOn = v end)
+CreateToggle(SilentSec, "Auto Stomp", false, function(v) StompOn = v end)
+
+CreateToggle(FovSec, "Fov Visible", false, function(v) FovShow = v if StrafeOn then FovCircle.Visible = v end end)
+CreateSlider(FovSec, "Fov Size", 50, 800, 150, function(v) FovSize = v FovCircle.Radius = v end)
+
+CreateToggle(MovementPage, "Speed Hack", false, function(v) SpeedOn = v end)
+CreateToggle(MovementPage, "Fly Mode", false, function(v) FlyOn = v end)
 
 RunService.Heartbeat:Connect(function()
     FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    local T = GetTarget()
-    if T and T.Character and T.Character:FindFirstChild("Humanoid") then
-        local Hum = T.Character.Humanoid
-        local Armor = T.Character:FindFirstChild("BodyArmor")
-        local ArmorVal = (Armor and Armor:FindFirstChild("Value")) and Armor.Value.Value or 0
-        local StartY = Camera.ViewportSize.Y - 80
-        TargetName.Visible, TargetName.Position, TargetName.Text = true, Vector2.new(20, StartY), "Target: " .. T.Name
-        TargetHP.Visible, TargetHP.Position, TargetHP.Text = true, Vector2.new(20, StartY + 20), "HP: " .. math.floor(Hum.Health)
-        TargetArmor.Visible, TargetArmor.Position, TargetArmor.Text = true, Vector2.new(20, StartY + 38), "Armor: " .. math.floor(ArmorVal)
-    else
-        TargetName.Visible, TargetHP.Visible, TargetArmor.Visible = false, false, false
-    end
 end)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
-        local TChest = GetChestPos(LockedPlayer) or TRoot.Position
+        local TChest = LockedPlayer.Character:FindFirstChild("UpperTorso") and LockedPlayer.Character.UpperTorso.Position or TRoot.Position
         Degree = Degree + 0.025
         local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
         Root.CFrame = CFrame.new(TargetPos, TChest)
@@ -211,36 +325,23 @@ RunService.RenderStepped:Connect(function()
         end
     end
     if RapidOn and Shooting and LocalPlayer.Character:FindFirstChildOfClass("Tool") then
-        local T = GetTarget()
-        local Pos = T and GetChestPos(T) or Mouse.Hit.p
-        for i = 1, 100 do
-            ReplicatedStorage.MainEvent:FireServer("Shoot", Pos)
-        end
+        local Pos = (StrafeOn and LockedPlayer) and (LockedPlayer.Character:FindFirstChild("UpperTorso") and LockedPlayer.Character.UpperTorso.Position or LockedPlayer.Character.HumanoidRootPart.Position) or Mouse.Hit.p
+        for i = 1, 100 do ReplicatedStorage.MainEvent:FireServer("Shoot", Pos) end
     end
 end)
 
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
-local oldIndex = mt.__index
 setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
-    local method = getnamecallmethod()
-    if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
-            local T = GetTarget()
-            local Pos = T and GetChestPos(T)
-            if Pos then args[2] = Pos return oldNamecall(self, unpack(args)) end
+    if not checkcaller() and getnamecallmethod() == "FireServer" and self.Name == "MainEvent" then
+        if (args[1] == "UpdateMousePos" or args[1] == "Shoot") and StrafeOn and LockedPlayer then
+            local T = LockedPlayer.Character
+            args[2] = T:FindFirstChild("UpperTorso") and T.UpperTorso.Position or T.HumanoidRootPart.Position
+            return oldNamecall(self, unpack(args))
         end
     end
     return oldNamecall(self, ...)
-end)
-mt.__index = newcclosure(function(self, idx)
-    if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
-        local T = GetTarget()
-        local Pos = T and GetChestPos(T)
-        if Pos then return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart) end
-    end
-    return oldIndex(self, idx)
 end)
 setreadonly(mt, true)
