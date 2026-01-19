@@ -13,7 +13,7 @@ local SpeedMultiplier = 3.5
 local AntiLockY = -10000
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_V90"
+ScreenGui.Name = "Azured_Mobile_V95"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -117,8 +117,15 @@ local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
 local AntiLockBtn = CreateBigBtn("ANTI LOCK", UDim2.new(0.85, -20, 0.72, 0))
 local RapidBtn = CreateBigBtn("RAPID FIRE", UDim2.new(0.85, -20, 0.8, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiLockOn, RapidOn = nil, false, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiLockOn, RapidOn, Shooting = nil, false, false, false, false, false, false, false, false
 local Degree = 0
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Shooting = true end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Shooting = false end
+end)
 
 local function GetTarget()
     local Target, MinDist = nil, FovSize
@@ -235,11 +242,10 @@ RunService.RenderStepped:Connect(function()
             else pRoot.Size, pRoot.Transparency = Vector3.new(2, 2, 1), 1 end
         end
     end
-    if RapidOn and LocalPlayer.Character:FindFirstChildOfClass("Tool") then
-        local Tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-        if Tool:FindFirstChild("Handle") then
-            ReplicatedStorage.MainEvent:FireServer("Shoot", Mouse.Hit.p)
-        end
+    if RapidOn and Shooting and LocalPlayer.Character:FindFirstChildOfClass("Tool") then
+        local T = GetTarget()
+        local Pos = T and GetChestPos(T) or Mouse.Hit.p
+        ReplicatedStorage.MainEvent:FireServer("Shoot", Pos)
     end
 end)
 
