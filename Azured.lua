@@ -130,8 +130,9 @@ local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
 local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
 local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
 local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
+local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.72, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiStompOn = nil, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiStompOn, EspOn = nil, false, false, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -157,28 +158,81 @@ local function GetChestPos(p)
     return nil
 end
 
+local function CreateEsp(plr)
+    local Box = Drawing.new("Square")
+    local Name = Drawing.new("Text")
+    local Distance = Drawing.new("Text")
+    local HealthBar = Drawing.new("Line")
+    local ArmorBar = Drawing.new("Line")
+
+    local function UpdateEsp()
+        local Connection
+        Connection = RunService.RenderStepped:Connect(function()
+            if EspOn and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr ~= LocalPlayer then
+                local Root = plr.Character.HumanoidRootPart
+                local Hum = plr.Character:FindFirstChild("Humanoid")
+                local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+
+                if OnScreen and Hum then
+                    local SizeX = 2000 / Pos.Z
+                    local SizeY = 3000 / Pos.Z
+                    local X = Pos.X - SizeX / 2
+                    local Y = Pos.Y - SizeY / 2
+
+                    Box.Visible, Box.Size, Box.Position = true, Vector2.new(SizeX, SizeY), Vector2.new(X, Y)
+                    Box.Color = Color3.fromRGB(255, 0, 255)
+
+                    Name.Visible, Name.Text, Name.Position = true, plr.Name, Vector2.new(Pos.X, Y - 16)
+                    Name.Center, Name.Outline = true, true
+
+                    local Dist = math.floor((Camera.CFrame.Position - Root.Position).Magnitude)
+                    Distance.Visible, Distance.Text, Distance.Position = true, tostring(Dist) .. " studs", Vector2.new(Pos.X, Y + SizeY + 5)
+                    Distance.Center, Distance.Outline = true, true
+
+                    HealthBar.Visible = true
+                    HealthBar.From = Vector2.new(X - 5, Y + SizeY)
+                    HealthBar.To = Vector2.new(X - 5, Y + SizeY - (SizeY * (Hum.Health / Hum.MaxHealth)))
+                    HealthBar.Color = Color3.fromRGB(0, 255, 0)
+
+                    local Armor = plr.Character:FindFirstChild("BodyArmor")
+                    local ArmorVal = (Armor and Armor:FindFirstChild("Value")) and Armor.Value.Value or 0
+                    ArmorBar.Visible = ArmorVal > 0
+                    ArmorBar.From = Vector2.new(X + SizeX + 5, Y + SizeY)
+                    ArmorBar.To = Vector2.new(X + SizeX + 5, Y + SizeY - (SizeY * (ArmorVal / 100)))
+                    ArmorBar.Color = Color3.fromRGB(0, 150, 255)
+                else
+                    Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, ArmorBar.Visible = false, false, false, false, false
+                end
+            else
+                Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, ArmorBar.Visible = false, false, false, false, false
+                if not plr.Parent then
+                    Box:Remove() Name:Remove() Distance:Remove() HealthBar:Remove() ArmorBar:Remove()
+                    Connection:Disconnect()
+                end
+            end
+        end)
+    end
+    coroutine.wrap(UpdateEsp)()
+end
+
+for _, v in pairs(Players:GetPlayers()) do if v ~= LocalPlayer then CreateEsp(v) end end
+Players.PlayerAdded:Connect(function(v) CreateEsp(v) end)
+
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local T = GetTarget()
-        if T then 
-            LockedPlayer = T 
-            Camera.CameraType = Enum.CameraType.Scriptable
-            Notify("Lock ON: " .. T.Name)
-        else 
-            StrafeOn = false 
-        end
-    else 
-        LockedPlayer = nil 
-        Camera.CameraType = Enum.CameraType.Custom
-        Notify("Lock OFF")
-    end
+        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Lock ON: " .. T.Name)
+        else StrafeOn = false end
+    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
 end)
 
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
 StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
+AntiStompBtn.MouseButton1Click:Connect(function() AntiStompOn = not AntiStompOn AntiStompBtn.Text = AntiStompOn and "ANTI STOMP: ON" or "ANTI STOMP: OFF" end)
+EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.Text = EspOn and "ESP: ON" or "ESP: OFF" end)
 
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
@@ -192,10 +246,7 @@ mt.__namecall = newcclosure(function(self, ...)
         if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
             local T = GetTarget()
             local Pos = T and GetChestPos(T)
-            if Pos then
-                args[2] = Pos
-                return oldNamecall(self, unpack(args))
-            end
+            if Pos then args[2] = Pos return oldNamecall(self, unpack(args)) end
         end
     end
     return oldNamecall(self, ...)
@@ -205,13 +256,10 @@ mt.__index = newcclosure(function(self, idx)
     if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
         local T = GetTarget()
         local Pos = T and GetChestPos(T)
-        if Pos then
-            return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart)
-        end
+        if Pos then return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart) end
     end
     return oldIndex(self, idx)
 end)
-
 setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
@@ -221,22 +269,17 @@ RunService.RenderStepped:Connect(function()
 
     local Tool = Char:FindFirstChildOfClass("Tool")
     if Tool and Tool:FindFirstChild("Ammo") then
-        if Tool.Ammo:IsA("IntValue") and Tool.Ammo.Value <= 0 then
-            ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
-        end
+        if Tool.Ammo:IsA("IntValue") and Tool.Ammo.Value <= 0 then ReplicatedStorage.MainEvent:FireServer("Reload", Tool) end
     end
 
     local CurrentTarget = GetTarget()
     if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
         local targetHum = CurrentTarget.Character.Humanoid
-        TargetUI.Visible = true
-        TargetName.Text = CurrentTarget.Name
+        TargetUI.Visible, TargetName.Text = true, CurrentTarget.Name
         HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
         local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
         ArmorLabel.Text = "Armor: " .. tostring(armorValue)
-    else
-        TargetUI.Visible = false
-    end
+    else TargetUI.Visible = false end
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
@@ -253,32 +296,19 @@ RunService.RenderStepped:Connect(function()
     if StompOn then
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                local eRoot = v.Character.HumanoidRootPart
-                local eHum = v.Character:FindFirstChild("Humanoid")
-                if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then
-                    ReplicatedStorage.MainEvent:FireServer("Stomp")
-                end
+                local eRoot, eHum = v.Character.HumanoidRootPart, v.Character:FindFirstChild("Humanoid")
+                if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then ReplicatedStorage.MainEvent:FireServer("Stomp") end
             end
         end
     end
     
-    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then
-        Root:Destroy()
-    end
+    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then Root:Destroy() end
 
     for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character then
-            local pRoot = v.Character:FindFirstChild("HumanoidRootPart")
-            if pRoot then
-                if HitOn then 
-                    pRoot.Size = Vector3.new(HitSize, HitSize, HitSize) 
-                    pRoot.Transparency = 0.8 
-                    pRoot.CanCollide = false
-                else 
-                    pRoot.Size = Vector3.new(2, 2, 1) 
-                    pRoot.Transparency = 1 
-                end
-            end
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local pRoot = v.Character.HumanoidRootPart
+            if HitOn then pRoot.Size, pRoot.Transparency, pRoot.CanCollide = Vector3.new(HitSize, HitSize, HitSize), 0.8, false
+            else pRoot.Size, pRoot.Transparency = Vector3.new(2, 2, 1), 1 end
         end
     end
 end)
