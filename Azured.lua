@@ -166,7 +166,6 @@ LockBtn.MouseButton1Click:Connect(function()
             Notify("Lock ON: " .. T.Name)
         else 
             StrafeOn = false 
-            Camera.CameraType = Enum.CameraType.Custom
         end
     else 
         LockedPlayer = nil 
@@ -216,12 +215,12 @@ setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
-    if not Char or not Char:FindFirstChild("HumanoidRootPart") or not Char:FindFirstChild("Humanoid") then return end
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
     local Tool = Char:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Ammo") and Tool.Ammo:IsA("IntValue") then
-        if Tool.Ammo.Value <= 0 then
+    if Tool and Tool:FindFirstChild("Ammo") then
+        if Tool.Ammo:IsA("IntValue") and Tool.Ammo.Value <= 0 then
             ReplicatedStorage.MainEvent:FireServer("Reload", Tool)
         end
     end
@@ -232,8 +231,7 @@ RunService.RenderStepped:Connect(function()
         TargetUI.Visible = true
         TargetName.Text = CurrentTarget.Name
         HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
-        local armorObj = CurrentTarget.Character:FindFirstChild("BodyArmor")
-        local armorValue = (armorObj and armorObj:FindFirstChild("Value")) and armorObj.Value.Value or (armorObj and 100 or 0)
+        local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
         ArmorLabel.Text = "Armor: " .. tostring(armorValue)
     else
         TargetUI.Visible = false
@@ -242,17 +240,14 @@ RunService.RenderStepped:Connect(function()
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         local TChest = GetChestPos(LockedPlayer) or TRoot.Position
-        Degree = Degree + 0.015
-        local TargetPos = TChest + Vector3.new(math.sin(Degree * 10) * 11, 5, math.cos(Degree * 10) * 11)
+        Degree = Degree + 0.025
+        local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
         Root.CFrame = CFrame.new(TargetPos, TChest)
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, TChest)
+        Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
     end
 
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
-    if FlyOn and not StrafeOn then 
-        Root.Velocity = Vector3.new(0, 0.1, 0) 
-        Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) 
-    end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
 
     if StompOn then
         for _, v in pairs(Players:GetPlayers()) do
@@ -277,7 +272,6 @@ RunService.RenderStepped:Connect(function()
                 else 
                     pRoot.Size = Vector3.new(2, 2, 1) 
                     pRoot.Transparency = 1 
-                    pRoot.CanCollide = true
                 end
             end
         end
