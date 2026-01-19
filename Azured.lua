@@ -10,11 +10,20 @@ local FovSize = 150
 local StompRange = 15 
 local HitSize = 15
 local SpeedMultiplier = 3.5
+local AntiLockY = -10000
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Chest_V55"
+ScreenGui.Name = "Azured_Mobile_V55"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local VelDot = Drawing.new("Circle")
+VelDot.Filled = true
+VelDot.Thickness = 1
+VelDot.Transparency = 1
+VelDot.Radius = 5
+VelDot.Color = Color3.fromRGB(170, 120, 210)
+VelDot.Visible = false
 
 local function Notify(txt)
     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -79,9 +88,10 @@ local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
 local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
 local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
 local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
-local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.72, 0))
+local AntiLockBtn = CreateBigBtn("ANTI LOCK", UDim2.new(0.85, -20, 0.72, 0))
+local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.8, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiStompOn, EspOn = nil, false, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiLockOn, EspOn = nil, false, false, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -165,12 +175,16 @@ Players.PlayerAdded:Connect(function(v) CreateEsp(v) end)
 AntiStompBtn.MouseButton1Click:Connect(function()
     if LocalPlayer.Character then
         for _, obj in pairs(LocalPlayer.Character:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                obj:Destroy()
-            end
+            if obj:IsA("BasePart") then obj:Destroy() end
         end
         Notify("Anti Stomp: Character Destroyed")
     end
+end)
+
+AntiLockBtn.MouseButton1Click:Connect(function()
+    AntiLockOn = not AntiLockOn
+    AntiLockBtn.Text = AntiLockOn and "ANTI LOCK: ON" or "ANTI LOCK: OFF"
+    VelDot.Visible = AntiLockOn
 end)
 
 LockBtn.MouseButton1Click:Connect(function()
@@ -187,6 +201,66 @@ FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyO
 StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.Text = EspOn and "ESP: ON" or "ESP: OFF" end)
+
+RunService.Heartbeat:Connect(function()
+    if AntiLockOn and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local Root = LocalPlayer.Character.HumanoidRootPart
+        local Velocity = Root.AssemblyLinearVelocity
+        local Cframe = Root.CFrame
+        Root.AssemblyLinearVelocity = Vector3.new(0, AntiLockY, 0)
+        Root.CFrame = Cframe * CFrame.Angles(0, math.rad(0.1), 0)
+        RunService.RenderStepped:Wait()
+        Root.AssemblyLinearVelocity = Velocity
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then 
+        VelDot.Visible = false
+        return 
+    end
+    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
+
+    if AntiLockOn then
+        local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position + (Root.AssemblyLinearVelocity * 0.15))
+        if OnScreen then
+            VelDot.Visible = true
+            VelDot.Position = Vector2.new(Pos.X, Pos.Y)
+        else
+            VelDot.Visible = false
+        end
+    end
+
+    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local TRoot = LockedPlayer.Character.HumanoidRootPart
+        local TChest = GetChestPos(LockedPlayer) or TRoot.Position
+        Degree = Degree + 0.025
+        local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
+        Root.CFrame = CFrame.new(TargetPos, TChest)
+        Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
+    end
+
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+    
+    if StompOn then
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local eRoot, eHum = v.Character.HumanoidRootPart, v.Character:FindFirstChild("Humanoid")
+                if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then ReplicatedStorage.MainEvent:FireServer("Stomp") end
+            end
+        end
+    end
+
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local pRoot = v.Character.HumanoidRootPart
+            if HitOn then pRoot.Size, pRoot.Transparency, pRoot.CanCollide = Vector3.new(HitSize, HitSize, HitSize), 0.8, false
+            else pRoot.Size, pRoot.Transparency = Vector3.new(2, 2, 1), 1 end
+        end
+    end
+end)
 
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
@@ -213,34 +287,3 @@ mt.__index = newcclosure(function(self, idx)
     return oldIndex(self, idx)
 end)
 setreadonly(mt, true)
-
-RunService.RenderStepped:Connect(function()
-    local Char = LocalPlayer.Character
-    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local TRoot = LockedPlayer.Character.HumanoidRootPart
-        local TChest = GetChestPos(LockedPlayer) or TRoot.Position
-        Degree = Degree + 0.025
-        local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
-        Root.CFrame = CFrame.new(TargetPos, TChest)
-        Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
-    end
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
-    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
-    if StompOn then
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                local eRoot, eHum = v.Character.HumanoidRootPart, v.Character:FindFirstChild("Humanoid")
-                if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then ReplicatedStorage.MainEvent:FireServer("Stomp") end
-            end
-        end
-    end
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local pRoot = v.Character.HumanoidRootPart
-            if HitOn then pRoot.Size, pRoot.Transparency, pRoot.CanCollide = Vector3.new(HitSize, HitSize, HitSize), 0.8, false
-            else pRoot.Size, pRoot.Transparency = Vector3.new(2, 2, 1), 1 end
-        end
-    end
-end)
