@@ -6,13 +6,15 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
+-- Variables
 local FovSize = 150
-local StompRange = 15 
-local HitSize = 15
 local SpeedMultiplier = 3.5
+local Degree = 0
+local LockedPlayer, StrafeOn, SilentOn, SpeedOn, FovShow = nil, false, false, false, false
 
+-- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_V3_RapidFix"
+ScreenGui.Name = "Azured_V3_NoRapid"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -146,15 +148,57 @@ local function CreateToggle(parent, text, default, callback)
     end)
 end
 
+local function CreateSlider(parent, text, min, max, default, callback)
+    local Frame = Instance.new("Frame")
+    Frame.Parent = parent
+    Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Frame.Size = UDim2.new(1, 0, 0, 45)
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 4)
+    local Label = Instance.new("TextLabel")
+    Label.Parent = Frame
+    Label.Text = text .. ": " .. default
+    Label.Size = UDim2.new(1, -20, 0, 20)
+    Label.Position = UDim2.new(0, 10, 0, 5)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    local SliderBar = Instance.new("TextButton")
+    SliderBar.Parent = Frame
+    SliderBar.Size = UDim2.new(1, -20, 0, 4)
+    SliderBar.Position = UDim2.new(0, 10, 0, 30)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    SliderBar.Text = ""
+    local Indicator = Instance.new("Frame")
+    Indicator.Parent = SliderBar
+    Indicator.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    Indicator.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    SliderBar.MouseButton1Down:Connect(function()
+        local MoveConn, UpConn
+        MoveConn = RunService.RenderStepped:Connect(function()
+            local mousePos = UserInputService:GetMouseLocation().X
+            local barPos = SliderBar.AbsolutePosition.X
+            local barSize = SliderBar.AbsoluteSize.X
+            local percent = math.clamp((mousePos - barPos) / barSize, 0, 1)
+            local val = math.floor(min + (max - min) * percent)
+            Indicator.Size = UDim2.new(percent, 0, 1, 0)
+            Label.Text = text .. ": " .. val
+            callback(val)
+        end)
+        UpConn = UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then MoveConn:Disconnect() UpConn:Disconnect() end
+        end)
+    end)
+end
+
+-- Drawing FOV (Silent Aim Only)
 local FovCircle = Drawing.new("Circle")
 FovCircle.Thickness = 1
 FovCircle.NumSides = 100
 FovCircle.Radius = FovSize
+FovCircle.Filled = false
+FovCircle.Color = Color3.fromRGB(255, 255, 255)
 FovCircle.Visible = false
 
-local LockedPlayer, StrafeOn, SilentOn, RapidOn, Shooting, SpeedOn, FlyOn, HitOn, StompOn = nil, false, false, false, false, false, false, false, false
-local Degree = 0
-
+-- Functions
 local function GetSilentTarget()
     local Target, MinDist = nil, FovSize
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -173,12 +217,16 @@ end
 
 local function GetChestPos(p)
     if not p or not p.Character then return nil end
-    return p.Character:FindFirstChild("UpperTorso") and p.Character.UpperTorso.Position or p.Character.HumanoidRootPart.Position
+    local Char = p.Character
+    return Char:FindFirstChild("UpperTorso") and Char.UpperTorso.Position or Char:FindFirstChild("HumanoidRootPart") and Char.HumanoidRootPart.Position or nil
 end
 
+-- UI Sections
 local AuraSec = CreateSection(CombatPage, "Aura Lock")
 local SilentSec = CreateSection(CombatPage, "Silent Aim")
+local FovSec = CreateSection(CombatPage, "FOV Settings (Silent)")
 
+-- Aura Tool Logic
 local function GiveAuraTool()
     if LocalPlayer.Backpack:FindFirstChild("Aura") then return end
     local Tool = Instance.new("Tool")
@@ -191,8 +239,11 @@ local function GiveAuraTool()
     Tool.Activated:Connect(function()
         local T = Mouse.Target
         local Plr = T and T.Parent and Players:GetPlayerFromCharacter(T.Parent) or T and T.Parent.Parent and Players:GetPlayerFromCharacter(T.Parent.Parent)
-        if Plr and Plr ~= LocalPlayer then LockedPlayer = Plr StrafeOn = true Camera.CameraType = Enum.CameraType.Scriptable
-        else LockedPlayer = nil StrafeOn = false Camera.CameraType = Enum.CameraType.Custom end
+        if Plr and Plr ~= LocalPlayer then 
+            LockedPlayer = Plr; StrafeOn = true; Camera.CameraType = Enum.CameraType.Scriptable
+        else 
+            LockedPlayer = nil; StrafeOn = false; Camera.CameraType = Enum.CameraType.Custom 
+        end
     end)
 end
 
@@ -207,69 +258,46 @@ local function CreateButton(parent, text, callback)
     Btn.MouseButton1Click:Connect(callback)
 end
 
+-- Combat Page Content
 CreateButton(AuraSec, "Get Aura Tool", GiveAuraTool)
 CreateToggle(SilentSec, "Silent Aim", false, function(v) SilentOn = v end)
-CreateToggle(SilentSec, "Rapid Fire 100x", false, function(v) RapidOn = v end)
-CreateToggle(SilentSec, "Auto Stomp", false, function(v) StompOn = v end)
+CreateToggle(FovSec, "Show FOV Circle", false, function(v) FovShow = v FovCircle.Visible = v end)
+CreateSlider(FovSec, "FOV Radius", 50, 800, 150, function(v) FovSize = v FovCircle.Radius = v end)
 
 CreateToggle(MovementPage, "Speed Hack", false, function(v) SpeedOn = v end)
 
+-- Main Loops
 ToggleBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
-UserInputService.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then Shooting = true end end)
-UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then Shooting = false end end)
-
 RunService.RenderStepped:Connect(function()
+    FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-    local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
+    local Root = Char.HumanoidRootPart
 
+    -- Aura Lock (Strafe) - Độc lập
     if StrafeOn and LockedPlayer and LockedPlayer.Character then
-        local TChest = GetChestPos(LockedPlayer)
-        if TChest then
+        local TPos = GetChestPos(LockedPlayer)
+        if TPos then
             Degree = Degree + 0.025
-            Root.CFrame = CFrame.new(TChest + Vector3.new(math.sin(Degree*60)*11, 5, math.cos(Degree*60)*11), TChest)
-            Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
+            Root.CFrame = CFrame.new(TPos + Vector3.new(math.sin(Degree*60)*11, 5, math.cos(Degree*60)*11), TPos)
+            Camera.CFrame = CFrame.new(TPos + Vector3.new(0, 5, 12), TPos)
         end
     end
 
-    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
-
-    if StompOn then
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and (Root.Position - v.Character.HumanoidRootPart.Position).Magnitude <= StompRange then
-                if v.Character.Humanoid.Health <= 15 then ReplicatedStorage.MainEvent:FireServer("Stomp") end
-            end
-        end
-    end
-
-    -- Fix Rapid Fire
-    if RapidOn and Shooting then
-        local Tool = Char:FindFirstChildOfClass("Tool")
-        if Tool then
-            local ST = GetSilentTarget()
-            local TargetPos = (SilentOn and ST) and GetChestPos(ST) or (StrafeOn and LockedPlayer) and GetChestPos(LockedPlayer) or Mouse.Hit.p
-            
-            -- Gửi nhiều gói tin cùng lúc để tăng tốc độ bắn
-            for i = 1, 10 do
-                ReplicatedStorage.MainEvent:FireServer("Shoot", TargetPos)
-            end
-        end
-    end
+    if SpeedOn and Char.Humanoid.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Char.Humanoid.MoveDirection * SpeedMultiplier) end
 end)
 
--- Metatable Hook để Silent Aim hoạt động chuẩn
+-- Metatable Hook (Silent Aim)
 local mt = getrawmetatable(game)
 local old = mt.__namecall
 setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
-    local method = getnamecallmethod()
-    if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
+    if not checkcaller() and getnamecallmethod() == "FireServer" and self.Name == "MainEvent" then
+        if (args[1] == "UpdateMousePos" or args[1] == "Shoot") and SilentOn then
             local ST = GetSilentTarget()
-            local TargetPos = (SilentOn and ST) and GetChestPos(ST) or (StrafeOn and LockedPlayer) and GetChestPos(LockedPlayer)
-            if TargetPos then args[2] = TargetPos return old(self, unpack(args)) end
+            if ST then args[2] = GetChestPos(ST) return old(self, unpack(args)) end
         end
     end
     return old(self, ...)
