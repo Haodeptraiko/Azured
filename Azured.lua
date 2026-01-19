@@ -165,6 +165,9 @@ local function CreateEsp(plr)
     local HealthBar = Drawing.new("Line")
     local ArmorBar = Drawing.new("Line")
 
+    Box.Filled = false
+    Box.Thickness = 1.5
+
     local function UpdateEsp()
         local Connection
         Connection = RunService.RenderStepped:Connect(function()
@@ -183,11 +186,11 @@ local function CreateEsp(plr)
                     Box.Color = Color3.fromRGB(255, 0, 255)
 
                     Name.Visible, Name.Text, Name.Position = true, plr.Name, Vector2.new(Pos.X, Y - 16)
-                    Name.Center, Name.Outline = true, true
+                    Name.Size, Name.Center, Name.Outline = 14, true, true
 
                     local Dist = math.floor((Camera.CFrame.Position - Root.Position).Magnitude)
                     Distance.Visible, Distance.Text, Distance.Position = true, tostring(Dist) .. " studs", Vector2.new(Pos.X, Y + SizeY + 5)
-                    Distance.Center, Distance.Outline = true, true
+                    Distance.Size, Distance.Center, Distance.Outline = 14, true, true
 
                     HealthBar.Visible = true
                     HealthBar.From = Vector2.new(X - 5, Y + SizeY)
@@ -222,7 +225,7 @@ LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
         local T = GetTarget()
-        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Lock ON: " .. T.Name)
+        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Lock ON")
         else StrafeOn = false end
     else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
 end)
@@ -267,19 +270,9 @@ RunService.RenderStepped:Connect(function()
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
-    local Tool = Char:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Ammo") then
-        if Tool.Ammo:IsA("IntValue") and Tool.Ammo.Value <= 0 then ReplicatedStorage.MainEvent:FireServer("Reload", Tool) end
+    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then
+        Root.CFrame = Root.CFrame * CFrame.new(0, -500, 0)
     end
-
-    local CurrentTarget = GetTarget()
-    if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
-        local targetHum = CurrentTarget.Character.Humanoid
-        TargetUI.Visible, TargetName.Text = true, CurrentTarget.Name
-        HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
-        local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
-        ArmorLabel.Text = "Armor: " .. tostring(armorValue)
-    else TargetUI.Visible = false end
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
@@ -301,8 +294,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-    
-    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then Root:Destroy() end
 
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
