@@ -10,10 +10,9 @@ local FovSize = 150
 local StompRange = 15 
 local HitSize = 15
 local SpeedMultiplier = 3.5
-local AntiLockY = -10000
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_V95"
+ScreenGui.Name = "Azured_Mobile_V110"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
@@ -42,14 +41,6 @@ TargetArmor.Size = 16
 TargetArmor.Outline = true
 TargetArmor.Color = Color3.fromRGB(0, 50, 200)
 TargetArmor.Visible = false
-
-local VelDot = Drawing.new("Circle")
-VelDot.Filled = true
-VelDot.Thickness = 1
-VelDot.Transparency = 1
-VelDot.Radius = 5
-VelDot.Color = Color3.fromRGB(170, 120, 210)
-VelDot.Visible = false
 
 local function Notify(txt)
     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -114,10 +105,9 @@ local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
 local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
 local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
 local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
-local AntiLockBtn = CreateBigBtn("ANTI LOCK", UDim2.new(0.85, -20, 0.72, 0))
-local RapidBtn = CreateBigBtn("RAPID FIRE", UDim2.new(0.85, -20, 0.8, 0))
+local RapidBtn = CreateBigBtn("RAPID FIRE", UDim2.new(0.85, -20, 0.72, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiLockOn, RapidOn, Shooting = nil, false, false, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, RapidOn, Shooting = nil, false, false, false, false, false, false, false
 local Degree = 0
 
 UserInputService.InputBegan:Connect(function(input)
@@ -159,12 +149,6 @@ AntiStompBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-AntiLockBtn.MouseButton1Click:Connect(function()
-    AntiLockOn = not AntiLockOn
-    AntiLockBtn.Text = AntiLockOn and "ANTI LOCK: ON" or "ANTI LOCK: OFF"
-    VelDot.Visible = AntiLockOn
-end)
-
 LockBtn.MouseButton1Click:Connect(function()
     StrafeOn = not StrafeOn
     if StrafeOn then
@@ -194,29 +178,13 @@ RunService.Heartbeat:Connect(function()
     else
         TargetName.Visible, TargetHP.Visible, TargetArmor.Visible = false, false, false
     end
-    if AntiLockOn and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local Root = LocalPlayer.Character.HumanoidRootPart
-        local Velocity = Root.AssemblyLinearVelocity
-        local Cframe = Root.CFrame
-        Root.AssemblyLinearVelocity = Vector3.new(0, AntiLockY, 0)
-        Root.CFrame = Cframe * CFrame.Angles(0, math.rad(0.1), 0)
-        RunService.RenderStepped:Wait()
-        Root.AssemblyLinearVelocity = Velocity
-    end
 end)
 
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
-    if not Char or not Char:FindFirstChild("HumanoidRootPart") then 
-        VelDot.Visible = false
-        return 
-    end
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-    if AntiLockOn then
-        local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position + (Root.AssemblyLinearVelocity * 0.15))
-        if OnScreen then VelDot.Visible, VelDot.Position = true, Vector2.new(Pos.X, Pos.Y)
-        else VelDot.Visible = false end
-    end
+
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         local TChest = GetChestPos(LockedPlayer) or TRoot.Position
@@ -245,7 +213,9 @@ RunService.RenderStepped:Connect(function()
     if RapidOn and Shooting and LocalPlayer.Character:FindFirstChildOfClass("Tool") then
         local T = GetTarget()
         local Pos = T and GetChestPos(T) or Mouse.Hit.p
-        ReplicatedStorage.MainEvent:FireServer("Shoot", Pos)
+        for i = 1, 100 do
+            ReplicatedStorage.MainEvent:FireServer("Shoot", Pos)
+        end
     end
 end)
 
