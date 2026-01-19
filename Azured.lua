@@ -13,9 +13,17 @@ local SpeedMultiplier = 3.5
 local AntiLockY = -10000
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Mobile_V55"
+ScreenGui.Name = "Azured_Mobile_V60"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local FovCircle = Drawing.new("Circle")
+FovCircle.Thickness = 1
+FovCircle.NumSides = 100
+FovCircle.Radius = FovSize
+FovCircle.Filled = false
+FovCircle.Color = Color3.fromRGB(255, 255, 255)
+FovCircle.Visible = true
 
 local VelDot = Drawing.new("Circle")
 VelDot.Filled = true
@@ -95,7 +103,7 @@ local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiLockOn, EspOn 
 local Degree = 0
 
 local function GetTarget()
-    local Target, MinDist = nil, FovSize / 2
+    local Target, MinDist = nil, FovSize
     local Center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
@@ -103,7 +111,7 @@ local function GetTarget()
             if Hum and Hum.Health > 0 then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
                 local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - Center).Magnitude
-                if Dist < MinDist then MinDist = Dist; Target = v end
+                if OnScreen and Dist < MinDist then MinDist = Dist; Target = v end
             end
         end
     end
@@ -122,9 +130,13 @@ local function CreateEsp(plr)
     local Name = Drawing.new("Text")
     local Distance = Drawing.new("Text")
     local HealthBar = Drawing.new("Line")
+    local HealthNum = Drawing.new("Text")
     local ArmorBar = Drawing.new("Line")
+
     Box.Filled = false
-    Box.Thickness = 1.5
+    Box.Thickness = 1
+    Box.Color = Color3.fromRGB(255, 0, 255)
+
     local function UpdateEsp()
         local Connection
         Connection = RunService.RenderStepped:Connect(function()
@@ -132,35 +144,45 @@ local function CreateEsp(plr)
                 local Root = plr.Character.HumanoidRootPart
                 local Hum = plr.Character:FindFirstChild("Humanoid")
                 local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+
                 if OnScreen and Hum then
-                    local SizeX = 2000 / Pos.Z
-                    local SizeY = 3000 / Pos.Z
+                    local SizeX = 1400 / Pos.Z
+                    local SizeY = 2200 / Pos.Z
                     local X = Pos.X - SizeX / 2
                     local Y = Pos.Y - SizeY / 2
+
                     Box.Visible, Box.Size, Box.Position = true, Vector2.new(SizeX, SizeY), Vector2.new(X, Y)
-                    Box.Color = Color3.fromRGB(255, 0, 255)
+
                     Name.Visible, Name.Text, Name.Position = true, plr.Name, Vector2.new(Pos.X, Y - 16)
-                    Name.Size, Name.Center, Name.Outline = 14, true, true
+                    Name.Size, Name.Center, Name.Outline, Name.Color = 14, true, true, Color3.fromRGB(255, 255, 255)
+
                     local Dist = math.floor((Camera.CFrame.Position - Root.Position).Magnitude)
                     Distance.Visible, Distance.Text, Distance.Position = true, tostring(Dist) .. " studs", Vector2.new(Pos.X, Y + SizeY + 5)
-                    Distance.Size, Distance.Center, Distance.Outline = 14, true, true
+                    Distance.Size, Distance.Center, Distance.Outline, Distance.Color = 14, true, true, Color3.fromRGB(255, 255, 255)
+
                     HealthBar.Visible = true
                     HealthBar.From = Vector2.new(X - 5, Y + SizeY)
                     HealthBar.To = Vector2.new(X - 5, Y + SizeY - (SizeY * (Hum.Health / Hum.MaxHealth)))
-                    HealthBar.Color = Color3.fromRGB(0, 255, 0)
+                    HealthBar.Color = Color3.fromRGB(180, 0, 255)
+                    HealthBar.Thickness = 2
+
+                    HealthNum.Visible, HealthNum.Text, HealthNum.Position = true, tostring(math.floor(Hum.Health)), Vector2.new(X - 20, Y + SizeY - (SizeY * (Hum.Health / Hum.MaxHealth)) - 10)
+                    HealthNum.Size, HealthNum.Color, HealthNum.Outline = 12, Color3.fromRGB(255, 255, 255), true
+
                     local Armor = plr.Character:FindFirstChild("BodyArmor")
                     local ArmorVal = (Armor and Armor:FindFirstChild("Value")) and Armor.Value.Value or 0
                     ArmorBar.Visible = ArmorVal > 0
                     ArmorBar.From = Vector2.new(X + SizeX + 5, Y + SizeY)
                     ArmorBar.To = Vector2.new(X + SizeX + 5, Y + SizeY - (SizeY * (ArmorVal / 100)))
-                    ArmorBar.Color = Color3.fromRGB(0, 150, 255)
+                    ArmorBar.Color = Color3.fromRGB(0, 50, 200)
+                    ArmorBar.Thickness = 2
                 else
-                    Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, ArmorBar.Visible = false, false, false, false, false
+                    Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, HealthNum.Visible, ArmorBar.Visible = false, false, false, false, false, false
                 end
             else
-                Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, ArmorBar.Visible = false, false, false, false, false
+                Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, HealthNum.Visible, ArmorBar.Visible = false, false, false, false, false, false
                 if not plr.Parent then
-                    Box:Remove() Name:Remove() Distance:Remove() HealthBar:Remove() ArmorBar:Remove()
+                    Box:Remove() Name:Remove() Distance:Remove() HealthBar:Remove() HealthNum:Remove() ArmorBar:Remove()
                     Connection:Disconnect()
                 end
             end
@@ -203,6 +225,7 @@ HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text 
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.Text = EspOn and "ESP: ON" or "ESP: OFF" end)
 
 RunService.Heartbeat:Connect(function()
+    FovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
     if AntiLockOn and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local Root = LocalPlayer.Character.HumanoidRootPart
         local Velocity = Root.AssemblyLinearVelocity
@@ -225,8 +248,7 @@ RunService.RenderStepped:Connect(function()
     if AntiLockOn then
         local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position + (Root.AssemblyLinearVelocity * 0.15))
         if OnScreen then
-            VelDot.Visible = true
-            VelDot.Position = Vector2.new(Pos.X, Pos.Y)
+            VelDot.Visible, VelDot.Position = true, Vector2.new(Pos.X, Pos.Y)
         else
             VelDot.Visible = false
         end
@@ -287,3 +309,4 @@ mt.__index = newcclosure(function(self, idx)
     return oldIndex(self, idx)
 end)
 setreadonly(mt, true)
+
