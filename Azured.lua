@@ -12,13 +12,13 @@ local HitSize = 15
 local SpeedMultiplier = 3.5
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured.gg"
+ScreenGui.Name = "Azured_Chest_V55"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local function Notify(txt)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Azured Mobile",
+        Title = "Azured PC",
         Text = txt,
         Duration = 2
     })
@@ -129,10 +129,10 @@ local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
 local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
 local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
 local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
-local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
+local BulletTPBtn = CreateBigBtn("BULLET TP", UDim2.new(0.85, -20, 0.64, 0))
 local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.72, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiStompOn, EspOn = nil, false, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, BulletTPOn, EspOn = nil, false, false, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -180,10 +180,12 @@ local function CreateEsp(plr)
                     local Y = Pos.Y - SizeY / 2
 
                     Box.Visible, Box.Size, Box.Position = true, Vector2.new(SizeX, SizeY), Vector2.new(X, Y)
-                    Box.Color = Color3.fromRGB(255, 0, 255)
+                    Box.Color = Color3.fromRGB(255, 255, 255)
+                    Box.Thickness = 1
 
                     Name.Visible, Name.Text, Name.Position = true, plr.Name, Vector2.new(Pos.X, Y - 16)
                     Name.Center, Name.Outline = true, true
+                    Name.Color = Color3.fromRGB(255, 255, 255)
 
                     local Dist = math.floor((Camera.CFrame.Position - Root.Position).Magnitude)
                     Distance.Visible, Distance.Text, Distance.Position = true, tostring(Dist) .. " studs", Vector2.new(Pos.X, Y + SizeY + 5)
@@ -231,7 +233,7 @@ SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Tex
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
 StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
-AntiStompBtn.MouseButton1Click:Connect(function() AntiStompOn = not AntiStompOn AntiStompBtn.Text = AntiStompOn and "ANTI STOMP: ON" or "ANTI STOMP: OFF" end)
+BulletTPBtn.MouseButton1Click:Connect(function() BulletTPOn = not BulletTPOn BulletTPBtn.Text = BulletTPOn and "BULLET TP: ON" or "BULLET TP: OFF" end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.Text = EspOn and "ESP: ON" or "ESP: OFF" end)
 
 local mt = getrawmetatable(game)
@@ -239,27 +241,48 @@ local oldNamecall = mt.__namecall
 local oldIndex = mt.__index
 setreadonly(mt, false)
 
+-- SILENT AIM (Luon hoat dong khi co muc tieu trong FOV)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
     if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
         if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
             local T = GetTarget()
-            local Pos = T and GetChestPos(T)
-            if Pos then args[2] = Pos return oldNamecall(self, unpack(args)) end
+            if T then args[2] = GetChestPos(T) return oldNamecall(self, unpack(args)) end
         end
     end
     return oldNamecall(self, ...)
 end)
 
 mt.__index = newcclosure(function(self, idx)
-    if self == Mouse and (idx == "Hit" or idx == "Target") and not checkcaller() then
+    if not checkcaller() and self == Mouse and (idx == "Hit" or idx == "Target") then
         local T = GetTarget()
-        local Pos = T and GetChestPos(T)
-        if Pos then return (idx == "Hit" and CFrame.new(Pos) or T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart) end
+        if T then
+            local Pos = GetChestPos(T)
+            if idx == "Hit" then return CFrame.new(Pos) end
+            if idx == "Target" then return T.Character.HumanoidRootPart end
+        end
     end
     return oldIndex(self, idx)
 end)
+
+-- BULLET TP (Ban xuyen tuong)
+local oldRaycast = workspace.Raycast
+workspace.Raycast = function(self, origin, direction, params)
+    if not checkcaller() and BulletTPOn then
+        local T = GetTarget()
+        if T and T.Character then
+            return {
+                Instance = T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart,
+                Position = GetChestPos(T),
+                Material = Enum.Material.Plastic,
+                Normal = Vector3.new(0, 0, 0)
+            }
+        end
+    end
+    return oldRaycast(self, origin, direction, params)
+end
+
 setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
@@ -301,8 +324,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-    
-    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then Root:Destroy() end
 
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
