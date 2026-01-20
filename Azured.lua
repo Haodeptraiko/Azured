@@ -4,63 +4,94 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
 
 local FovSize = 150
-local StompRange = 15 
-local HitSize = 15
+local StompRange = 20 
+local HitSize = 200 -- Mac dinh 200
 local SpeedMultiplier = 3.5
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Aura_V1_Final"
+ScreenGui.Name = "Aura_Mobile_V3_Final"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local function Notify(txt)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Aura System",
+        Title = "Aura Mobile",
         Text = txt,
         Duration = 2
     })
 end
 
--- PANEL CHINH HITBOX
+-- SILENT FOV CIRCLE
+local FovCircle = Instance.new("Frame")
+FovCircle.Parent = ScreenGui
+FovCircle.Size = UDim2.new(0, FovSize, 0, FovSize)
+FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+FovCircle.BackgroundTransparency = 1
+local StrokeFOV = Instance.new("UIStroke", FovCircle)
+StrokeFOV.Thickness = 1
+StrokeFOV.Color = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
+
+-- HITBOX SLIDER PANEL
 local HitboxPanel = Instance.new("Frame")
-HitboxPanel.Name = "HitboxPanel"
 HitboxPanel.Parent = ScreenGui
-HitboxPanel.Size = UDim2.new(0, 200, 0, 100)
-HitboxPanel.Position = UDim2.new(0.5, -100, 0.4, 0)
+HitboxPanel.Size = UDim2.new(0, 260, 0, 110)
+HitboxPanel.Position = UDim2.new(0.5, -130, 0.4, 0)
 HitboxPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 HitboxPanel.BorderSizePixel = 0
 HitboxPanel.Visible = false
+HitboxPanel.ZIndex = 15
 Instance.new("UICorner", HitboxPanel)
 
-local HitboxTitle = Instance.new("TextLabel")
-HitboxTitle.Parent = HitboxPanel
-HitboxTitle.Size = UDim2.new(1, 0, 0, 30)
-HitboxTitle.Text = "NHAP SIZE HITBOX"
-HitboxTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-HitboxTitle.BackgroundTransparency = 1
-HitboxTitle.Font = Enum.Font.SourceSansBold
-HitboxTitle.TextSize = 14
+local HitLabel = Instance.new("TextLabel")
+HitLabel.Parent = HitboxPanel
+HitLabel.Size = UDim2.new(1, 0, 0, 40)
+HitLabel.Text = "HITBOX SIZE: 200"
+HitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+HitLabel.BackgroundTransparency = 1
+HitLabel.Font = Enum.Font.SourceSansBold
+HitLabel.TextSize = 16
 
-local HitboxInput = Instance.new("TextBox")
-HitboxInput.Parent = HitboxPanel
-HitboxInput.Size = UDim2.new(0, 160, 0, 30)
-HitboxInput.Position = UDim2.new(0.1, 0, 0.45, 0)
-HitboxInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-HitboxInput.Text = tostring(HitSize)
-HitboxInput.TextColor3 = Color3.fromRGB(0, 255, 150)
-HitboxInput.PlaceholderText = "Size (2 - 100)"
-Instance.new("UICorner", HitboxInput)
+local SliderBack = Instance.new("Frame")
+SliderBack.Parent = HitboxPanel
+SliderBack.Size = UDim2.new(0, 200, 0, 12)
+SliderBack.Position = UDim2.new(0.5, -100, 0.65, 0)
+SliderBack.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Instance.new("UICorner", SliderBack)
 
-HitboxInput.FocusLost:Connect(function()
-    local val = tonumber(HitboxInput.Text)
-    if val then 
-        HitSize = math.clamp(val, 2, 100) 
-        Notify("Da thiet lap Hitbox: " .. HitSize) 
+local SliderMain = Instance.new("TextButton")
+SliderMain.Parent = SliderBack
+SliderMain.Size = UDim2.new(0, 25, 0, 25)
+SliderMain.Position = UDim2.new(0.05, 0, -0.5, 0)
+SliderMain.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+SliderMain.Text = ""
+Instance.new("UICorner", SliderMain)
+
+local function UpdateSlider(input)
+    local pos = math.clamp((input.Position.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
+    SliderMain.Position = UDim2.new(pos, -12, -0.5, 0)
+    HitSize = math.floor(150 + (pos * 850)) -- 150 -> 1000
+    HitLabel.Text = "HITBOX SIZE: " .. HitSize
+end
+
+local draggingSlider = false
+SliderMain.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then draggingSlider = true end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        UpdateSlider(input)
     end
-    HitboxPanel.Visible = false
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
+        draggingSlider = false 
+        task.wait(0.5)
+        if not draggingSlider then HitboxPanel.Visible = false end
+    end
 end)
 
 local function MakeDraggable(obj)
@@ -68,32 +99,33 @@ local function MakeDraggable(obj)
     obj.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true DragStart = input.Position StartPos = obj.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then Dragging = false end end)
         end
     end)
-    obj.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then DragInput = input end end)
     UserInputService.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
+        if Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local Delta = input.Position - DragStart
             obj.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + Delta.X, StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y)
         end
+    end)
+    obj.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then Dragging = false end
     end)
 end
 
 local function CreateBigBtn(text, pos)
     local Btn = Instance.new("TextButton")
     Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 110, 0, 40)
+    Btn.Size = UDim2.new(0, 115, 0, 42)
     Btn.Position = pos
     Btn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
     Btn.Text = text .. ": OFF"
     Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
     Btn.Font = Enum.Font.SourceSansBold
     Btn.TextSize = 14
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
     local S = Instance.new("UIStroke", Btn)
     S.Thickness = 2
-    S.Color = Color3.fromRGB(60, 60, 60)
+    S.Color = Color3.fromRGB(70, 70, 70)
     MakeDraggable(Btn)
     return Btn
 end
@@ -101,7 +133,7 @@ end
 local function CreateRoundBtn(text, pos, color)
     local Btn = Instance.new("TextButton")
     Btn.Parent = ScreenGui
-    Btn.Size = UDim2.new(0, 65, 0, 65)
+    Btn.Size = UDim2.new(0, 68, 0, 68)
     Btn.Position = pos
     Btn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
     Btn.Text = text
@@ -116,28 +148,34 @@ local function CreateRoundBtn(text, pos, color)
     return Btn
 end
 
-local LockBtn = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.2, 0), Color3.fromRGB(80, 80, 80))
-local ViewBtn = CreateRoundBtn("AURA", UDim2.new(0.8, 75, 0.2, 0), Color3.fromRGB(0, 150, 255))
+local LockBtn = CreateRoundBtn("LOCK", UDim2.new(0.8, 0, 0.15, 0), Color3.fromRGB(80, 80, 80))
+local ViewBtn = CreateRoundBtn("AURA", UDim2.new(0.8, 75, 0.15, 0), Color3.fromRGB(0, 150, 255))
 
-local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.8, -10, 0.35, 0))
-local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.8, -10, 0.43, 0))
-local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.8, -10, 0.51, 0))
-local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.8, -10, 0.59, 0))
-local BulletTPBtn = CreateBigBtn("BULLET TP", UDim2.new(0.8, -10, 0.67, 0))
-local EspBtn = CreateBigBtn("ESP", UDim2.new(0.8, -10, 0.75, 0))
+local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.8, -10, 0.32, 0))
+local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.8, -10, 0.40, 0))
+local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.8, -10, 0.48, 0))
+local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.8, -10, 0.56, 0))
+local BulletTPBtn = CreateBigBtn("BULLET TP", UDim2.new(0.8, -10, 0.64, 0))
+local EspBtn = CreateBigBtn("ESP", UDim2.new(0.8, -10, 0.72, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, BulletTPOn, EspOn, ViewOn = nil, false, false, false, false, false, false, false, false
+local LockedPlayer, SpeedOn, FlyOn, HitOn, StompOn, BulletTPOn, EspOn, ViewOn = nil, false, false, false, false, false, false, false
 
--- XU LY NHAN GIU HITBOX 3 GIAY
+-- HANDLE HITBOX HOLD 3s
 local holdStart = 0
-HitboxBtn.MouseButton1Down:Connect(function() holdStart = tick() end)
-HitboxBtn.MouseButton1Up:Connect(function()
-    if tick() - holdStart >= 3 then 
-        HitboxPanel.Visible = true 
-    else 
-        HitOn = not HitOn 
-        HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" 
-    end
+local isHolding = false
+HitboxBtn.MouseButton1Down:Connect(function() 
+    holdStart = tick() 
+    isHolding = true
+    task.spawn(function()
+        while isHolding do
+            if tick() - holdStart >= 3 then HitboxPanel.Visible = true isHolding = false break end
+            task.wait(0.1)
+        end
+    end)
+end)
+HitboxBtn.MouseButton1Up:Connect(function() 
+    if isHolding then HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end
+    isHolding = false
 end)
 
 local function GetTarget()
@@ -156,20 +194,9 @@ local function GetTarget()
     return Target
 end
 
-local function GetChestPos(p)
-    if p.Character:FindFirstChild("UpperTorso") then return p.Character.UpperTorso.Position
-    elseif p.Character:FindFirstChild("HumanoidRootPart") then return p.Character.HumanoidRootPart.Position
-    end
-    return nil
-end
-
 LockBtn.MouseButton1Click:Connect(function()
-    StrafeOn = not StrafeOn
-    if StrafeOn then
-        local T = GetTarget()
-        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Locked: "..T.Name)
-        else StrafeOn = false end
-    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
+    local T = GetTarget()
+    if T then LockedPlayer = T Notify("Locked: "..T.Name) else LockedPlayer = nil end
 end)
 
 ViewBtn.MouseButton1Click:Connect(function()
@@ -180,11 +207,11 @@ ViewBtn.MouseButton1Click:Connect(function()
         if T and T.Character and T.Character:FindFirstChild("Humanoid") then
             LockedPlayer = T
             Camera.CameraSubject = T.Character.Humanoid
-            Notify("Aura View: " .. T.Name)
+            Notify("Aura View ON")
         else ViewOn = false ViewBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5) end
     else
         Camera.CameraSubject = LocalPlayer.Character.Humanoid
-        Notify("Aura OFF")
+        Notify("Aura View OFF")
     end
 end)
 
@@ -194,17 +221,19 @@ StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Tex
 BulletTPBtn.MouseButton1Click:Connect(function() BulletTPOn = not BulletTPOn BulletTPBtn.Text = BulletTPOn and "BULLET TP: ON" or "BULLET TP: OFF" end)
 EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.Text = EspOn and "ESP: ON" or "ESP: OFF" end)
 
--- METATABLE HOOKS
+-- SILENT AIM
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
 setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
-    local method = getnamecallmethod()
-    if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
+    if not checkcaller() and getnamecallmethod() == "FireServer" and self.Name == "MainEvent" then
         if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
             local T = GetTarget()
-            if T then args[2] = GetChestPos(T) return oldNamecall(self, unpack(args)) end
+            if T and T.Character:FindFirstChild("HumanoidRootPart") then
+                args[2] = T.Character.HumanoidRootPart.Position
+                return oldNamecall(self, unpack(args))
+            end
         end
     end
     return oldNamecall(self, ...)
@@ -217,17 +246,16 @@ RunService.RenderStepped:Connect(function()
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
-    -- LOGIC AURA VIEW (Bay 500 studs)
+    -- AURA LOGIC
     if ViewOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local TRoot = LockedPlayer.Character.HumanoidRootPart
         Root.Velocity = Vector3.new(0, 0, 0)
-        Root.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 500, 0))
+        Root.CFrame = CFrame.new(LockedPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 500, 0))
     end
 
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
     if FlyOn and not ViewOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 4) end
 
-    -- CAP NHAT HITBOX
+    -- HITBOX UPDATE
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
             local pRoot = v.Character.HumanoidRootPart
@@ -242,14 +270,13 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-    
-    -- AUTO STOMP
+
+    -- STOMP
     if StompOn then
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") then
                 local eRoot = v.Character:FindFirstChild("HumanoidRootPart")
-                local eHum = v.Character.Humanoid
-                if eRoot and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then
+                if eRoot and v.Character.Humanoid.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then
                     ReplicatedStorage.MainEvent:FireServer("Stomp")
                 end
             end
