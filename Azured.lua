@@ -321,7 +321,7 @@ RunService.RenderStepped:Connect(function()
     if ViewOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         Root.Velocity = Vector3.new(0,0,0)
-        Root.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 300, 0))
+        Root.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 150, 0))
     end
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
