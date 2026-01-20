@@ -241,14 +241,26 @@ local oldNamecall = mt.__namecall
 local oldIndex = mt.__index
 setreadonly(mt, false)
 
--- SILENT AIM (Luon hoat dong khi co muc tieu trong FOV)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
-    if not checkcaller() and method == "FireServer" and self.Name == "MainEvent" then
-        if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
+    
+    if not checkcaller() then
+        if method == "FireServer" and self.Name == "MainEvent" then
+            if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
+                local T = GetTarget()
+                if T then args[2] = GetChestPos(T) return oldNamecall(self, unpack(args)) end
+            end
+        elseif method == "Raycast" and BulletTPOn then
             local T = GetTarget()
-            if T then args[2] = GetChestPos(T) return oldNamecall(self, unpack(args)) end
+            if T and T.Character then
+                return {
+                    Instance = T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart,
+                    Position = GetChestPos(T),
+                    Material = Enum.Material.Plastic,
+                    Normal = Vector3.new(0, 0, 0)
+                }
+            end
         end
     end
     return oldNamecall(self, ...)
@@ -265,24 +277,6 @@ mt.__index = newcclosure(function(self, idx)
     end
     return oldIndex(self, idx)
 end)
-
--- BULLET TP (Ban xuyen tuong)
-local oldRaycast = workspace.Raycast
-workspace.Raycast = function(self, origin, direction, params)
-    if not checkcaller() and BulletTPOn then
-        local T = GetTarget()
-        if T and T.Character then
-            return {
-                Instance = T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart,
-                Position = GetChestPos(T),
-                Material = Enum.Material.Plastic,
-                Normal = Vector3.new(0, 0, 0)
-            }
-        end
-    end
-    return oldRaycast(self, origin, direction, params)
-end
-
 setreadonly(mt, true)
 
 RunService.RenderStepped:Connect(function()
