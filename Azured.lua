@@ -12,9 +12,68 @@ local HitSize = 15
 local SpeedMultiplier = 3.5
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Azured_Chest_V55"
+ScreenGui.Name = "Azured.gg"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
+
+local function Notify(txt)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Azured Mobile",
+        Text = txt,
+        Duration = 2
+    })
+end
+
+local TargetUI = Instance.new("Frame")
+TargetUI.Name = "TargetUI"
+TargetUI.Parent = ScreenGui
+TargetUI.Size = UDim2.new(0, 140, 0, 50)
+TargetUI.Position = UDim2.new(0.02, 0, 0.7, 0)
+TargetUI.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+TargetUI.BackgroundTransparency = 0.4
+TargetUI.Visible = false
+Instance.new("UICorner", TargetUI).CornerRadius = UDim.new(0, 5)
+
+local TargetName = Instance.new("TextLabel")
+TargetName.Parent = TargetUI
+TargetName.Size = UDim2.new(1, 0, 0, 20)
+TargetName.BackgroundTransparency = 1
+TargetName.Text = "None"
+TargetName.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetName.Font = Enum.Font.SourceSansBold
+TargetName.TextSize = 12
+
+local HealthBarBack = Instance.new("Frame")
+HealthBarBack.Parent = TargetUI
+HealthBarBack.Position = UDim2.new(0.1, 0, 0.5, 0)
+HealthBarBack.Size = UDim2.new(0.8, 0, 0, 6)
+HealthBarBack.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+
+local HealthBarMain = Instance.new("Frame")
+HealthBarMain.Parent = HealthBarBack
+HealthBarMain.Size = UDim2.new(1, 0, 1, 0)
+HealthBarMain.BackgroundColor3 = Color3.fromRGB(0, 255, 120)
+
+local ArmorLabel = Instance.new("TextLabel")
+ArmorLabel.Parent = TargetUI
+ArmorLabel.Position = UDim2.new(0, 0, 0.75, 0)
+ArmorLabel.Size = UDim2.new(1, 0, 0, 12)
+ArmorLabel.BackgroundTransparency = 1
+ArmorLabel.Text = "Armor: 0"
+ArmorLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+ArmorLabel.Font = Enum.Font.SourceSans
+ArmorLabel.TextSize = 10
+
+local FovCircle = Instance.new("Frame")
+FovCircle.Parent = ScreenGui
+FovCircle.Size = UDim2.new(0, FovSize, 0, FovSize)
+FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+FovCircle.BackgroundTransparency = 1
+local StrokeFOV = Instance.new("UIStroke", FovCircle)
+StrokeFOV.Thickness = 1
+StrokeFOV.Color = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
 
 local function MakeDraggable(obj)
     local Dragging, DragInput, DragStart, StartPos
@@ -33,49 +92,48 @@ local function MakeDraggable(obj)
     end)
 end
 
-local FovCircle = Instance.new("Frame")
-FovCircle.Name = "FovCircle"
-FovCircle.Parent = ScreenGui
-FovCircle.Size = UDim2.new(0, FovSize, 0, FovSize)
-FovCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-FovCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-FovCircle.BackgroundTransparency = 1
-FovCircle.Visible = true
-local StrokeFOV = Instance.new("UIStroke", FovCircle)
-StrokeFOV.Thickness = 1
-StrokeFOV.Color = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", FovCircle).CornerRadius = UDim.new(1, 0)
-
-local function CreateBar(name, pos, size)
-    local Frame = Instance.new("Frame")
-    Frame.Name = name
-    Frame.Parent = ScreenGui
-    Frame.Size = size
-    Frame.Position = pos
-    Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Frame.BorderSizePixel = 0
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
-    local Stroke = Instance.new("UIStroke", Frame)
-    Stroke.Color = Color3.fromRGB(60, 60, 60)
-    Stroke.Thickness = 2
-    MakeDraggable(Frame)
-    
-    local Tl = Instance.new("TextLabel")
-    Tl.Parent = Frame
-    Tl.Size = UDim2.new(1, -20, 1, 0)
-    Tl.Position = UDim2.new(0, 10, 0, 0)
-    Tl.Text = name .. " - ALWAYS ACTIVE"
-    Tl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Tl.Font = Enum.Font.SourceSansBold
-    Tl.TextSize = 14
-    Tl.BackgroundTransparency = 1
-    Tl.TextXAlignment = Enum.TextXAlignment.Left
-    
-    return Frame
+local function CreateBigBtn(text, pos)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = ScreenGui
+    Btn.Size = UDim2.new(0, 110, 0, 40)
+    Btn.Position = pos
+    Btn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+    Btn.Text = text .. ": OFF"
+    Btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Btn.Font = Enum.Font.SourceSansBold
+    Btn.TextSize = 14
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+    local S = Instance.new("UIStroke", Btn)
+    S.Thickness = 2
+    S.Color = Color3.fromRGB(60, 60, 60)
+    MakeDraggable(Btn)
+    return Btn
 end
 
-local MainM = CreateBar("MAIN", UDim2.new(0.3, 0, 0.05, 0), UDim2.new(0, 250, 0, 35))
-local FarmM = CreateBar("AUTO FARM", UDim2.new(0.3, 0, 0.12, 0), UDim2.new(0, 200, 0, 35))
+local LockBtn = Instance.new("TextButton")
+LockBtn.Parent = ScreenGui
+LockBtn.Size = UDim2.new(0, 60, 0, 60)
+LockBtn.Position = UDim2.new(0.85, 0, 0.2, 0)
+LockBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+LockBtn.Text = "LOCK"
+LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+LockBtn.Font = Enum.Font.SourceSansBold
+LockBtn.TextSize = 14
+Instance.new("UICorner", LockBtn).CornerRadius = UDim.new(1, 0)
+local LockStroke = Instance.new("UIStroke", LockBtn)
+LockStroke.Thickness = 2
+LockStroke.Color = Color3.fromRGB(70, 70, 70)
+MakeDraggable(LockBtn)
+
+local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
+local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
+local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
+local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
+local AntiStompBtn = CreateBigBtn("ANTI STOMP", UDim2.new(0.85, -20, 0.64, 0))
+local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.72, 0))
+
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, AntiStompOn, EspOn = nil, false, false, false, false, false, false, false
+local Degree = 0
 
 local function GetTarget()
     local Target, MinDist = nil, FovSize / 2
@@ -100,12 +158,81 @@ local function GetChestPos(p)
     return nil
 end
 
-local function GetATM()
-    for _, v in pairs(workspace.Cashiers:GetChildren()) do
-        if v:IsA("Model") and v:FindFirstChild("Head") and v.Head.Transparency == 0 then return v end
+local function CreateEsp(plr)
+    local Box = Drawing.new("Square")
+    local Name = Drawing.new("Text")
+    local Distance = Drawing.new("Text")
+    local HealthBar = Drawing.new("Line")
+    local ArmorBar = Drawing.new("Line")
+
+    local function UpdateEsp()
+        local Connection
+        Connection = RunService.RenderStepped:Connect(function()
+            if EspOn and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr ~= LocalPlayer then
+                local Root = plr.Character.HumanoidRootPart
+                local Hum = plr.Character:FindFirstChild("Humanoid")
+                local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+
+                if OnScreen and Hum then
+                    local SizeX = 2000 / Pos.Z
+                    local SizeY = 3000 / Pos.Z
+                    local X = Pos.X - SizeX / 2
+                    local Y = Pos.Y - SizeY / 2
+
+                    Box.Visible, Box.Size, Box.Position = true, Vector2.new(SizeX, SizeY), Vector2.new(X, Y)
+                    Box.Color = Color3.fromRGB(255, 0, 255)
+
+                    Name.Visible, Name.Text, Name.Position = true, plr.Name, Vector2.new(Pos.X, Y - 16)
+                    Name.Center, Name.Outline = true, true
+
+                    local Dist = math.floor((Camera.CFrame.Position - Root.Position).Magnitude)
+                    Distance.Visible, Distance.Text, Distance.Position = true, tostring(Dist) .. " studs", Vector2.new(Pos.X, Y + SizeY + 5)
+                    Distance.Center, Distance.Outline = true, true
+
+                    HealthBar.Visible = true
+                    HealthBar.From = Vector2.new(X - 5, Y + SizeY)
+                    HealthBar.To = Vector2.new(X - 5, Y + SizeY - (SizeY * (Hum.Health / Hum.MaxHealth)))
+                    HealthBar.Color = Color3.fromRGB(0, 255, 0)
+
+                    local Armor = plr.Character:FindFirstChild("BodyArmor")
+                    local ArmorVal = (Armor and Armor:FindFirstChild("Value")) and Armor.Value.Value or 0
+                    ArmorBar.Visible = ArmorVal > 0
+                    ArmorBar.From = Vector2.new(X + SizeX + 5, Y + SizeY)
+                    ArmorBar.To = Vector2.new(X + SizeX + 5, Y + SizeY - (SizeY * (ArmorVal / 100)))
+                    ArmorBar.Color = Color3.fromRGB(0, 150, 255)
+                else
+                    Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, ArmorBar.Visible = false, false, false, false, false
+                end
+            else
+                Box.Visible, Name.Visible, Distance.Visible, HealthBar.Visible, ArmorBar.Visible = false, false, false, false, false
+                if not plr.Parent then
+                    Box:Remove() Name:Remove() Distance:Remove() HealthBar:Remove() ArmorBar:Remove()
+                    Connection:Disconnect()
+                end
+            end
+        end)
     end
-    return nil
+    coroutine.wrap(UpdateEsp)()
 end
+
+for _, v in pairs(Players:GetPlayers()) do if v ~= LocalPlayer then CreateEsp(v) end end
+Players.PlayerAdded:Connect(function(v) CreateEsp(v) end)
+
+LockBtn.MouseButton1Click:Connect(function()
+    StrafeOn = not StrafeOn
+    if StrafeOn then
+        local T = GetTarget()
+        if T then LockedPlayer = T Camera.CameraType = Enum.CameraType.Scriptable Notify("Lock ON: " .. T.Name)
+        else StrafeOn = false end
+    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
+end)
+
+SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
+FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
+StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
+HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = HitOn and "HITBOX: ON" or "HITBOX: OFF" end)
+AntiStompBtn.MouseButton1Click:Connect(function() AntiStompOn = not AntiStompOn AntiStompBtn.Text = AntiStompOn and "ANTI STOMP: ON" or "ANTI STOMP: OFF" end)
+EspBtn.MouseButton1Click:Connect(function() EspOn = not EspOn EspBtn.Text = EspOn and "ESP: ON" or "ESP: OFF" end)
 
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
@@ -140,28 +267,48 @@ RunService.RenderStepped:Connect(function()
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
-    if Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
-    Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8)
+    local Tool = Char:FindFirstChildOfClass("Tool")
+    if Tool and Tool:FindFirstChild("Ammo") then
+        if Tool.Ammo:IsA("IntValue") and Tool.Ammo.Value <= 0 then ReplicatedStorage.MainEvent:FireServer("Reload", Tool) end
+    end
+
+    local CurrentTarget = GetTarget()
+    if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
+        local targetHum = CurrentTarget.Character.Humanoid
+        TargetUI.Visible, TargetName.Text = true, CurrentTarget.Name
+        HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
+        local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
+        ArmorLabel.Text = "Armor: " .. tostring(armorValue)
+    else TargetUI.Visible = false end
+
+    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local TRoot = LockedPlayer.Character.HumanoidRootPart
+        local TChest = GetChestPos(LockedPlayer) or TRoot.Position
+        Degree = Degree + 0.025
+        local TargetPos = TChest + Vector3.new(math.sin(Degree * 60) * 11, 5, math.cos(Degree * 60) * 11)
+        Root.CFrame = CFrame.new(TargetPos, TChest)
+        Camera.CFrame = CFrame.new(TChest + Vector3.new(0, 5, 12), TChest)
+    end
+
+    if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
+    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+
+    if StompOn then
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local eRoot, eHum = v.Character.HumanoidRootPart, v.Character:FindFirstChild("Humanoid")
+                if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then ReplicatedStorage.MainEvent:FireServer("Stomp") end
+            end
+        end
+    end
+    
+    if AntiStompOn and Hum.Health <= 15 and Hum.Health > 0 then Root:Destroy() end
 
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local eRoot, eHum = v.Character.HumanoidRootPart, v.Character:FindFirstChild("Humanoid")
-            if eHum and eHum.Health <= 15 and (Root.Position - eRoot.Position).Magnitude <= StompRange then 
-                ReplicatedStorage.MainEvent:FireServer("Stomp") 
-            end
-            eRoot.Size, eRoot.Transparency, eRoot.CanCollide = Vector3.new(HitSize, HitSize, HitSize), 0.8, false
-        end
-    end
-
-    local TargetATM = GetATM()
-    if TargetATM and TargetATM:FindFirstChild("Head") then
-        Root.CFrame = TargetATM.Head.CFrame * CFrame.new(0, -2, 2)
-        local Tool = Char:FindFirstChildOfClass("Tool")
-        if Tool then Tool:Activate() end
-    end
-    for _, v in pairs(workspace:GetChildren()) do
-        if v.Name == "DroppedCash" and (Root.Position - v.Position).Magnitude <= 18 then
-            fireclickdetector(v:FindFirstChild("ClickDetector"))
+            local pRoot = v.Character.HumanoidRootPart
+            if HitOn then pRoot.Size, pRoot.Transparency, pRoot.CanCollide = Vector3.new(HitSize, HitSize, HitSize), 0.8, false
+            else pRoot.Size, pRoot.Transparency = Vector3.new(2, 2, 1), 1 end
         end
     end
 end)
