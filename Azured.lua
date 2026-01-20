@@ -149,6 +149,7 @@ local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.72, 0))
 
 local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, BulletTPOn, EspOn, ViewOn = nil, false, false, false, false, false, false, false, false
 local Degree = 0
+local LastPos = nil -- Bien luu vi tri cu
 
 local function GetTarget()
     local Target, MinDist = nil, FovSize / 2
@@ -246,8 +247,13 @@ end)
 
 AuraBtn.MouseButton1Click:Connect(function()
     ViewOn = not ViewOn
+    local Char = LocalPlayer.Character
+    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+
     AuraBtn.BackgroundColor3 = ViewOn and Color3.fromRGB(0, 100, 200) or Color3.fromRGB(5, 5, 5)
+    
     if ViewOn then
+        if Root then LastPos = Root.CFrame end -- Luu lai vi tri truoc khi bay
         local T = GetTarget()
         if T and T.Character and T.Character:FindFirstChild("Humanoid") then
             LockedPlayer = T
@@ -255,8 +261,9 @@ AuraBtn.MouseButton1Click:Connect(function()
             Notify("Aura View: " .. T.Name)
         else ViewOn = false AuraBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5) end
     else
+        if Root and LastPos then Root.CFrame = LastPos end -- Quay ve cho cu khi tat
         Camera.CameraSubject = LocalPlayer.Character.Humanoid
-        Notify("Aura View OFF")
+        Notify("Aura View OFF - Back to Pos")
     end
 end)
 
@@ -317,7 +324,7 @@ RunService.RenderStepped:Connect(function()
         ArmorLabel.Text = "Armor: " .. (CurrentTarget.Character:FindFirstChild("BodyArmor") and "100" or "0")
     else TargetUI.Visible = false end
 
-    -- LOGIC AURA & AUTO FLY ABOVE (Bay 300 studs tren dau)
+    -- LOGIC AURA & AUTO FLY ABOVE (Bay 200 studs theo yeu cau cua ban)
     if ViewOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
         Root.Velocity = Vector3.new(0,0,0)
