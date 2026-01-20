@@ -126,13 +126,14 @@ LockStroke.Color = Color3.fromRGB(70, 70, 70)
 MakeDraggable(LockBtn)
 
 local SpeedBtn = CreateBigBtn("SPEED", UDim2.new(0.85, -20, 0.32, 0))
-local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.4, 0))
-local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.48, 0))
-local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.56, 0))
-local BulletTPBtn = CreateBigBtn("BULLET TP", UDim2.new(0.85, -20, 0.64, 0))
-local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.72, 0))
+local FlyBtn = CreateBigBtn("FLY", UDim2.new(0.85, -20, 0.40, 0))
+local ViewBtn = CreateBigBtn("VIEW", UDim2.new(0.85, -20, 0.48, 0))
+local StompBtn = CreateBigBtn("STOMP", UDim2.new(0.85, -20, 0.56, 0))
+local HitboxBtn = CreateBigBtn("HITBOX", UDim2.new(0.85, -20, 0.64, 0))
+local BulletTPBtn = CreateBigBtn("BULLET TP", UDim2.new(0.85, -20, 0.72, 0))
+local EspBtn = CreateBigBtn("ESP", UDim2.new(0.85, -20, 0.80, 0))
 
-local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, BulletTPOn, EspOn = nil, false, false, false, false, false, false, false
+local LockedPlayer, StrafeOn, SpeedOn, FlyOn, HitOn, StompOn, BulletTPOn, EspOn, ViewOn = nil, false, false, false, false, false, false, false, false
 local Degree = 0
 
 local function GetTarget()
@@ -229,6 +230,22 @@ LockBtn.MouseButton1Click:Connect(function()
     else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom Notify("Lock OFF") end
 end)
 
+ViewBtn.MouseButton1Click:Connect(function()
+    ViewOn = not ViewOn
+    ViewBtn.Text = ViewOn and "VIEW: ON" or "VIEW: OFF"
+    if ViewOn then
+        local T = GetTarget()
+        if T and T.Character and T.Character:FindFirstChild("Humanoid") then
+            LockedPlayer = T
+            Camera.CameraSubject = T.Character.Humanoid
+            Notify("Viewing: " .. T.Name)
+        else ViewOn = false end
+    else
+        Camera.CameraSubject = LocalPlayer.Character.Humanoid
+        Notify("View OFF")
+    end
+end)
+
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = SpeedOn and "SPEED: ON" or "SPEED: OFF" end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = FlyOn and "FLY: ON" or "FLY: OFF" end)
 StompBtn.MouseButton1Click:Connect(function() StompOn = not StompOn StompBtn.Text = StompOn and "STOMP: ON" or "STOMP: OFF" end)
@@ -244,7 +261,6 @@ setreadonly(mt, false)
 mt.__namecall = newcclosure(function(self, ...)
     local args = {...}
     local method = getnamecallmethod()
-    
     if not checkcaller() then
         if method == "FireServer" and self.Name == "MainEvent" then
             if args[1] == "UpdateMousePos" or args[1] == "Shoot" then
@@ -254,12 +270,7 @@ mt.__namecall = newcclosure(function(self, ...)
         elseif method == "Raycast" and BulletTPOn then
             local T = GetTarget()
             if T and T.Character then
-                return {
-                    Instance = T.Character:FindFirstChild("UpperTorso") or T.Character.HumanoidRootPart,
-                    Position = GetChestPos(T),
-                    Material = Enum.Material.Plastic,
-                    Normal = Vector3.new(0, 0, 0)
-                }
+                return { Instance = T.Character.HumanoidRootPart, Position = GetChestPos(T), Material = Enum.Material.Plastic, Normal = Vector3.new(0, 0, 0) }
             end
         end
     end
@@ -284,19 +295,20 @@ RunService.RenderStepped:Connect(function()
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
 
-    local Tool = Char:FindFirstChildOfClass("Tool")
-    if Tool and Tool:FindFirstChild("Ammo") then
-        if Tool.Ammo:IsA("IntValue") and Tool.Ammo.Value <= 0 then ReplicatedStorage.MainEvent:FireServer("Reload", Tool) end
-    end
-
     local CurrentTarget = GetTarget()
     if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Humanoid") then
         local targetHum = CurrentTarget.Character.Humanoid
         TargetUI.Visible, TargetName.Text = true, CurrentTarget.Name
         HealthBarMain.Size = UDim2.new(math.clamp(targetHum.Health / targetHum.MaxHealth, 0, 1), 0, 1, 0)
-        local armorValue = CurrentTarget.Character:FindFirstChild("BodyArmor") and 100 or 0
-        ArmorLabel.Text = "Armor: " .. tostring(armorValue)
+        ArmorLabel.Text = "Armor: " .. (CurrentTarget.Character:FindFirstChild("BodyArmor") and "100" or "0")
     else TargetUI.Visible = false end
+
+    -- LOGIC VIEW & AUTO FLY ABOVE (Bay 100 studs tren dau)
+    if ViewOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local TRoot = LockedPlayer.Character.HumanoidRootPart
+        Root.Velocity = Vector3.new(0,0,0)
+        Root.CFrame = CFrame.new(TRoot.Position + Vector3.new(0, 100, 0))
+    end
 
     if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local TRoot = LockedPlayer.Character.HumanoidRootPart
@@ -308,7 +320,7 @@ RunService.RenderStepped:Connect(function()
     end
 
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
-    if FlyOn and not StrafeOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
+    if FlyOn and not StrafeOn and not ViewOn then Root.Velocity = Vector3.new(0, 0, 0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 3.8) end
 
     if StompOn then
         for _, v in pairs(Players:GetPlayers()) do
@@ -322,6 +334,7 @@ RunService.RenderStepped:Connect(function()
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
             local pRoot = v.Character.HumanoidRootPart
+            pRoot.CanCollide = not ViewOn -- Tat va cham khi dang View de khong bi ket vat can tren cao
             if HitOn then pRoot.Size, pRoot.Transparency, pRoot.CanCollide = Vector3.new(HitSize, HitSize, HitSize), 0.8, false
             else pRoot.Size, pRoot.Transparency = Vector3.new(2, 2, 1), 1 end
         end
