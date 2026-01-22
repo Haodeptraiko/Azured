@@ -5,8 +5,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
+local AnimationSpeed = 1
+local dance_animation = Instance.new("Animation")
+dance_animation.AnimationId = "rbxassetid://14352343065"
 
--- Configs
+local animationTrack
+local flossEnabled = false
+local currentAnimationPreset = "None"
+local animationBaseUrl = "http://www.roblox.com/asset/?id="
+local anim_presets = {
+    Rthro = {idle = "2510196951", walk = "2510202577", run = "2510198475", jump = "2510197830", climb = "2510192778", fall = "2510195892"},
+    Ninja = {idle = "656117400", jump = "656117878", fall = "656115606", walk = "656121766", run = "656118852", climb = "656114359"},
+    DaHoodian = {idle = "782841498", walk = "616168032", run = "616163682", jump = "1083218792", climb = "1083439238", fall = "707829716"}
+}
+
 local FovSize = 293 
 local TargetPart = "Head" 
 local StompRange = 15 
@@ -15,14 +27,28 @@ local SpeedMultiplier = 10
 getgenv().Prediction = 0 
 local MainEvent = ReplicatedStorage:WaitForChild("MainEvent")
 
--- Variables for Kill Aura & Features
+local velMax = (128 ^ 2)
+local timeRelease, timeChoke = 0.015, 0.105
+local Property = sethiddenproperty
+local DesyncOn = false
+
+getgenv().headshots = {
+    HitEffects = {
+        HitSounds = true,
+        HitSoundID = "rbxassetid://97643101798871",
+        HitSoundVolume = 5,
+        HitNotifications = true,
+        HitNotificationsTime = 3,
+    }
+}
+local lastNotifTime = 0
+
 local KillAuraOn = false
 local StompAuraOn = false
 local KillAuraDist = 50
 local LockedPlayer, StrafeOn, ViewOn, SpeedOn, FlyOn, HitOn, StompOn, AntiLockOn, RapidOn, ReloadOn = nil, false, false, false, false, false, false, false, false, false
 local IsMouseDown, Degree, LastPos = false, 0, nil
 
--- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "Azured_V61_Fixed"
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -115,10 +141,54 @@ local function CreateBtn(parent, text)
     return Btn
 end
 
--- Menus
+local function createHitSound()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    local sound = Instance.new("Sound")
+    sound.Parent = LocalPlayer.Character.HumanoidRootPart
+    sound.SoundId = headshots.HitEffects.HitSoundID
+    sound.Volume = headshots.HitEffects.HitSoundVolume
+    sound:Play()
+    sound.Ended:Connect(function() sound:Destroy() end)
+end
+
+local function sendHitNotification(targetName)
+    if headshots.HitEffects.HitNotifications then
+        if tick() - lastNotifTime >= 3 then
+            lastNotifTime = tick()
+            print("headshots.cc - Hit Target: " .. targetName)
+        end
+    end
+end
+
+local function Sleep()
+    local Char = LocalPlayer.Character
+    if Char and Char:FindFirstChild("HumanoidRootPart") and Property then
+        return Property(Char.HumanoidRootPart, "NetworkIsSleeping", true)
+    end
+end
+
+local function InitDesync()
+    if not DesyncOn then return end
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    local Root = Char.HumanoidRootPart
+    local rootVel = Root.Velocity
+    local rootAng = math.random(-180, 180)
+    local X = math.random(-velMax, velMax)
+    local Y = math.random(0, velMax)
+    local Z = math.random(-velMax, velMax)
+    local rootOffset = Vector3.new(X, -Y, Z)
+    Root.CFrame *= CFrame.Angles(0, math.rad(rootAng), 0)
+    Root.Velocity = rootOffset
+    RunService.RenderStepped:Wait()
+    Root.CFrame *= CFrame.Angles(0, math.rad(-rootAng), 0)
+    Root.Velocity = rootVel
+end
+
 local MainM, MainT, MainS = CreateBaseMenu("MENU", UDim2.new(0.85, 0, 0.35, 0), 100)
 local SpeedBtn = CreateBtn(MainS, "SPEED: OFF")
 local FlyBtn = CreateBtn(MainS, "FLY: OFF")
+local DesyncBtn = CreateBtn(MainS, "DESYNC: OFF")
 local HitboxBtn = CreateBtn(MainS, "HITBOX: OFF")
 local StompBtn = CreateBtn(MainS, "AUTO STOMP: OFF")
 local KillAuraBtn = CreateBtn(MainS, "KILL AURA: OFF")
@@ -126,47 +196,116 @@ local StompAuraBtn = CreateBtn(MainS, "STOMP AURA: OFF")
 local AntiLockBtn = CreateBtn(MainS, "ANTI LOCK: OFF")
 local RapidBtn = CreateBtn(MainS, "RAPID FIRE: OFF")
 local ReloadBtn = CreateBtn(MainS, "AUTO RELOAD: OFF")
+local DanceBtn = CreateBtn(MainS, "DANCE: OFF")
+
+DanceBtn.MouseButton1Click:Connect(function()
+    flossEnabled = not flossEnabled
+    DanceBtn.Text = "DANCE: " .. (flossEnabled and "ON" or "OFF")
+    if flossEnabled and animationTrack then
+        animationTrack:Play()
+        animationTrack:AdjustSpeed(AnimationSpeed)
+    elseif animationTrack then
+        animationTrack:Stop()
+    end
+end)
+
+local PackBtn = CreateBtn(MainS, "PACK: NONE")
+local p_list = {"None", "Rthro", "Ninja", "DaHoodian"}
+local p_idx = 1
+PackBtn.MouseButton1Click:Connect(function()
+    p_idx = p_idx % #p_list + 1
+    currentAnimationPreset = p_list[p_idx]
+    PackBtn.Text = "PACK: " .. currentAnimationPreset
+    if LocalPlayer.Character and currentAnimationPreset ~= "None" then
+        apply_animations(LocalPlayer.Character, anim_presets[currentAnimationPreset])
+    end
+end)
 
 local MainOpened = false
 MainT.MouseButton1Click:Connect(function()
     MainOpened = not MainOpened
     MainS.Visible = MainOpened
-    MainM:TweenSize(MainOpened and UDim2.new(0, 150, 0, 320) or UDim2.new(0, 150, 0, 40), "Out", "Quart", 0.3, true)
+    MainM:TweenSize(MainOpened and UDim2.new(0, 150, 0, 350) or UDim2.new(0, 150, 0, 40), "Out", "Quart", 0.3, true)
     MainT.Text = MainOpened and "MENU [CLOSE]" or "MENU [OPEN]"
 end)
 
-local SkinM, SkinT, SkinS = CreateBaseMenu("SKIN GUN", UDim2.new(0.72, 0, 0.35, 0), 200)
-local GunSkins = {["LMG"] = nil, ["AK47"] = nil, ["Glock"] = nil, ["Revolver"] = nil, ["Shotgun"] = nil, ["SMG"] = nil, ["P90"] = nil, ["SilencerAR"] = nil, ["DrumGun"] = nil, ["Double-Barrel"] = nil}
-local SkinTextures = {["Galaxy"] = "rbxassetid://9402007158", ["Inferno"] = "rbxassetid://9401972413", ["Matrix"] = "rbxassetid://9402023983", ["RedDeath"] = "rbxassetid://8213168054", ["GoldGlory"] = "rbxassetid://8213175568"}
+RunService.Heartbeat:Connect(InitDesync)
+task.spawn(function()
+    while true do
+        task.wait(timeRelease)
+        if DesyncOn then
+            local statPing = game:GetService("Stats").PerformanceStats.Ping
+            local chokeClient = RunService.Heartbeat:Connect(Sleep)
+            local chokeServer = RunService.RenderStepped:Connect(Sleep)
+            task.wait(math.ceil(statPing:GetValue()) / 1000)
+            chokeClient:Disconnect()
+            chokeServer:Disconnect()
+        end
+    end
+end)
 
-for gunKey, _ in pairs(GunSkins) do
-    for skinName, skinId in pairs(SkinTextures) do
-        local b = CreateBtn(SkinS, gunKey .. " - " .. skinName)
-        b.MouseButton1Click:Connect(function() GunSkins[gunKey] = skinId end)
+local HitM, HitT, HitS = CreateBaseMenu("HIT EFFECTS", UDim2.new(0.59, 0, 0.35, 0), 300)
+local SoundToggleBtn = CreateBtn(HitS, "HIT SOUNDS: ON")
+local NotifToggleBtn = CreateBtn(HitS, "NOTIF: ON")
+local CycleSoundBtn = CreateBtn(HitS, "SOUND: NEVERLOSE")
+
+SoundToggleBtn.MouseButton1Click:Connect(function()
+    headshots.HitEffects.HitSounds = not headshots.HitEffects.HitSounds
+    SoundToggleBtn.Text = "HIT SOUNDS: " .. (headshots.HitEffects.HitSounds and "ON" or "OFF")
+end)
+
+NotifToggleBtn.MouseButton1Click:Connect(function()
+    headshots.HitEffects.HitNotifications = not headshots.HitEffects.HitNotifications
+    NotifToggleBtn.Text = "NOTIF: " .. (headshots.HitEffects.HitNotifications and "ON" or "OFF")
+end)
+
+local currentSoundIdx = 1
+local sounds = {
+    {name = "NEVERLOSE", id = "rbxassetid://97643101798871"},
+    {name = "GAMESENSE", id = "rbxassetid://4817809188"},
+    {name = "BUBBLE", id = "rbxassetid://6534947588"}
+}
+
+CycleSoundBtn.MouseButton1Click:Connect(function()
+    currentSoundIdx = currentSoundIdx % #sounds + 1
+    headshots.HitEffects.HitSoundID = sounds[currentSoundIdx].id
+    CycleSoundBtn.Text = "SOUND: " .. sounds[currentSoundIdx].name
+end)
+
+local HitOpened = false
+HitT.MouseButton1Click:Connect(function()
+    HitOpened = not HitOpened
+    HitS.Visible = HitOpened
+    HitM:TweenSize(HitOpened and UDim2.new(0, 150, 0, 180) or UDim2.new(0, 150, 0, 40), "Out", "Quart", 0.3, true)
+    HitT.Text = HitOpened and "HIT [CLOSE]" or "HIT [OPEN]"
+end)
+
+local function loadAnimationTrack(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    if animationTrack then animationTrack:Stop() end
+    animationTrack = humanoid:LoadAnimation(dance_animation)
+    animationTrack.Looped = true
+    if flossEnabled then
+        task.wait(0.5)
+        animationTrack:Play()
+        animationTrack:AdjustSpeed(AnimationSpeed)
     end
 end
 
-local SkinOpened = false
-SkinT.MouseButton1Click:Connect(function()
-    SkinOpened = not SkinOpened
-    SkinS.Visible = SkinOpened
-    SkinM:TweenSize(SkinOpened and UDim2.new(0, 150, 0, 280) or UDim2.new(0, 150, 0, 40), "Out", "Quart", 0.3, true)
-    SkinT.Text = SkinOpened and "SKIN [CLOSE]" or "SKIN [OPEN]"
+local function apply_animations(char, preset)
+    local animate = char:FindFirstChild("Animate")
+    if animate and preset then
+        if animate:FindFirstChild("idle") then animate.idle.Animation1.AnimationId = animationBaseUrl .. preset.idle end
+        if animate:FindFirstChild("walk") then animate.walk.WalkAnim.AnimationId = animationBaseUrl .. preset.walk end
+        if animate:FindFirstChild("run") then animate.run.RunAnim.AnimationId = animationBaseUrl .. preset.run end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    loadAnimationTrack(char)
 end)
 
-local LockBtn = Instance.new("TextButton", ScreenGui)
-LockBtn.Size = UDim2.new(0, 55, 0, 55); LockBtn.Position = UDim2.new(0.85, 0, 0.2, 0)
-LockBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5); LockBtn.Text = "LOCK"; LockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-LockBtn.ZIndex = 500; Instance.new("UICorner", LockBtn).CornerRadius = UDim.new(1, 0)
-MakeDraggable(LockBtn)
-
-local AuraBtn = Instance.new("TextButton", ScreenGui)
-AuraBtn.Size = UDim2.new(0, 55, 0, 55); AuraBtn.Position = UDim2.new(0.85, 60, 0.2, 0)
-AuraBtn.BackgroundColor3 = Color3.fromRGB(5, 5, 5); AuraBtn.Text = "AURA"; AuraBtn.TextColor3 = Color3.fromRGB(0, 150, 255)
-AuraBtn.ZIndex = 500; Instance.new("UICorner", AuraBtn).CornerRadius = UDim.new(1, 0)
-MakeDraggable(AuraBtn)
-
--- Button Events
+DesyncBtn.MouseButton1Click:Connect(function() DesyncOn = not DesyncOn DesyncBtn.Text = "DESYNC: "..(DesyncOn and "ON" or "OFF") end)
 SpeedBtn.MouseButton1Click:Connect(function() SpeedOn = not SpeedOn SpeedBtn.Text = "SPEED: "..(SpeedOn and "ON" or "OFF") end)
 FlyBtn.MouseButton1Click:Connect(function() FlyOn = not FlyOn FlyBtn.Text = "FLY: "..(FlyOn and "ON" or "OFF") end)
 HitboxBtn.MouseButton1Click:Connect(function() HitOn = not HitOn HitboxBtn.Text = "HITBOX: "..(HitOn and "ON" or "OFF") end)
@@ -177,7 +316,6 @@ AntiLockBtn.MouseButton1Click:Connect(function() AntiLockOn = not AntiLockOn Ant
 RapidBtn.MouseButton1Click:Connect(function() RapidOn = not RapidOn RapidBtn.Text = "RAPID FIRE: "..(RapidOn and "ON" or "OFF") end)
 ReloadBtn.MouseButton1Click:Connect(function() ReloadOn = not ReloadOn ReloadBtn.Text = "AUTO RELOAD: "..(ReloadOn and "ON" or "OFF") end)
 
--- Functions
 local function KnockCheck(v)
     if v.Character and v.Character:FindFirstChild("BodyEffects") then
         local ko = v.Character.BodyEffects:FindFirstChild("K.O") or v.Character.BodyEffects:FindFirstChild("KO")
@@ -209,7 +347,6 @@ local function GetTargetPartPos(p)
     return part.Position 
 end
 
--- Metatables
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
 local oldIndex = mt.__index
@@ -236,30 +373,18 @@ mt.__index = newcclosure(function(self, idx)
 end)
 setreadonly(mt, true)
 
-LockBtn.MouseButton1Click:Connect(function()
-    StrafeOn = not StrafeOn
-    if StrafeOn then
-        LockedPlayer = GetTarget()
-        if LockedPlayer then Camera.CameraType = Enum.CameraType.Scriptable else StrafeOn = false end
-    else LockedPlayer = nil Camera.CameraType = Enum.CameraType.Custom end
-end)
-
-AuraBtn.MouseButton1Click:Connect(function()
-    ViewOn = not ViewOn
-    if ViewOn then
-        local T = GetTarget()
-        if T and T.Character and T.Character:FindFirstChild("HumanoidRootPart") then 
-            LockedPlayer = T; LastPos = LocalPlayer.Character.HumanoidRootPart.CFrame; Camera.CameraSubject = T.Character.Humanoid 
-        else ViewOn = false end
-    else Camera.CameraSubject = LocalPlayer.Character.Humanoid; if LastPos then LocalPlayer.Character.HumanoidRootPart.CFrame = LastPos end end
-end)
-
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") or not Char:FindFirstChild("Humanoid") then return end
     local Root, Hum = Char.HumanoidRootPart, Char.Humanoid
-
-    -- Rapid Fire Cooldown Reducer (Advanced)
+ 
+     if ReloadOn then
+        local Tool = Char:FindFirstChildOfClass("Tool")
+        if Tool and Tool:FindFirstChild("Ammo") and Tool.Ammo.Value <= 0 then
+            MainEvent:FireServer("Reload", Tool)
+        end
+    end
+    
     if RapidOn then
         local tool = Char:FindFirstChildOfClass("Tool")
         if tool and getconnections then
@@ -275,7 +400,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Kill Aura
     if KillAuraOn then
         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") and not KnockCheck(player) and not player.Character:FindFirstChild("ForceField") then
@@ -283,55 +407,12 @@ RunService.RenderStepped:Connect(function()
                 local Tool = Char:FindFirstChildOfClass("Tool")
                 if distance <= KillAuraDist and Tool then
                     MainEvent:FireServer("ShootGun", Tool.Handle, Tool.Handle.Position, player.Character.Head.Position, player.Character.Head, Vector3.new(0,0,0))
+                    if headshots.HitEffects.HitSounds then createHitSound() end
                 end
             end
         end
     end
 
-    -- Stomp Aura
-    if StompAuraOn then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") and KnockCheck(player) then
-                local distance = (player.Character.HumanoidRootPart.Position - Root.Position).Magnitude
-                if distance <= KillAuraDist then
-                    local be = player.Character:FindFirstChild("BodyEffects")
-                    if be and be:FindFirstChild("SDeath") and be.SDeath.Value == false then
-                        local OldCF = Root.CFrame
-                        Root.CFrame = CFrame.new(player.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
-                        MainEvent:FireServer("Stomp")
-                        task.wait(0.1)
-                        Root.CFrame = OldCF
-                    end
-                end
-            end
-        end
-    end
-
-    -- Aura 230m
-    if ViewOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        Root.CFrame = CFrame.new(LockedPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 230, 0))
-        Root.Velocity = Vector3.new(0,0,0)
-    end
-
-    -- Skins & Other Logics
-    for _, tool in pairs(Char:GetChildren()) do
-        if tool:IsA("Tool") then
-            for gunKey, skinId in pairs(GunSkins) do
-                if tool.Name:lower():find(gunKey:lower()) and skinId then
-                    local h = tool:FindFirstChild("Default") or tool:FindFirstChild("Handle")
-                    if h and h:IsA("MeshPart") then h.TextureID = skinId end
-                end
-            end
-        end
-    end
-
-    if StrafeOn and LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        Degree = Degree + 0.03
-        local TPos = GetTargetPartPos(LockedPlayer)
-        local Orbit = TPos + Vector3.new(math.sin(Degree*50)*12, 5, math.cos(Degree*50)*12)
-        Root.CFrame = CFrame.new(Orbit, TPos)
-        Camera.CFrame = CFrame.new(TPos + Vector3.new(0, 5, 15), TPos)
-    end
     if SpeedOn and Hum.MoveDirection.Magnitude > 0 then Root.CFrame = Root.CFrame + (Hum.MoveDirection * SpeedMultiplier) end
     if FlyOn then Root.Velocity = Vector3.new(0,0,0) Root.CFrame = Root.CFrame + (Camera.CFrame.LookVector * 10) end
     if AntiLockOn then Root.Velocity = Vector3.new(math.random(-500,500), math.random(-500,500), math.random(-500,500)) end
@@ -339,12 +420,14 @@ RunService.RenderStepped:Connect(function()
     for _, v in pairs(Players:GetPlayers()) do
         if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
             if HitOn then v.Character.HumanoidRootPart.Size = Vector3.new(HitSize, HitSize, HitSize) v.Character.HumanoidRootPart.Transparency = 0.8 else v.Character.HumanoidRootPart.Size = Vector3.new(2,2,1) v.Character.HumanoidRootPart.Transparency = 1 end
-            if StompOn and v.Character.Humanoid.Health <= 15 and (Root.Position - v.Character.HumanoidRootPart.Position).Magnitude < StompRange then MainEvent:FireServer("Stomp") end
+            if StompOn and v.Character.Humanoid.Health <= 15 and (Root.Position - v.Character.HumanoidRootPart.Position).Magnitude < StompRange then 
+                MainEvent:FireServer("Stomp")
+                sendHitNotification(v.Name)
+            end
         end
     end
 end)
 
--- Improved Rapid Fire Input
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.UserInputType == Enum.UserInputType.MouseButton1 then
         IsMouseDown = true
@@ -354,17 +437,18 @@ UserInputService.InputBegan:Connect(function(input, gpe)
                     local t = LocalPlayer.Character:FindFirstChildOfClass("Tool")
                     if t then 
                         t:Activate() 
-                        -- Nếu là game Da Hood, việc bắn thêm Remote sẽ giúp tăng tốc độ bắn
                         local target = GetTarget()
                         if target then
                             MainEvent:FireServer("ShootGun", t.Handle, t.Handle.Position, GetTargetPartPos(target), target.Character.Head, Vector3.new(0,0,0))
+                            if headshots.HitEffects.HitSounds then createHitSound() end
                         end
-                        if ReloadOn and t:FindFirstChild("Ammo") and t.Ammo.Value <= 0 then MainEvent:FireServer("Reload", t) end 
                     end
-                    task.wait(0.01) -- Đợi cực ngắn để bắn liên tục
+                    task.wait(0.01)
                 end
             end)
         end
     end
 end)
 UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then IsMouseDown = false end end)
+
+if LocalPlayer.Character then loadAnimationTrack(LocalPlayer.Character) end
